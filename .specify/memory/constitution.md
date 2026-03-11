@@ -1,6 +1,6 @@
 <!--
 Sync Impact Report
-- Version change: template-unversioned -> 1.0.0
+- Version change: 1.0.0 -> 1.1.0
 - Modified principles:
   - Principle 1 placeholder -> I. Authoritative Source and Traceability
   - Principle 2 placeholder -> II. Server-Authoritative Architecture
@@ -13,14 +13,7 @@ Sync Impact Report
 - Removed sections:
   - None
 - Templates requiring updates:
-  - ✅ updated .specify/templates/plan-template.md
-  - ✅ updated .specify/templates/spec-template.md
-  - ✅ updated .specify/templates/tasks-template.md
-  - ✅ updated .specify/templates/agent-file-template.md
-  - ✅ updated README.md
-  - ✅ checked .specify/templates/checklist-template.md (no change required)
-  - ✅ checked .specify/templates/constitution-template.md (no change required)
-  - ✅ checked .specify/templates/commands/*.md (directory not present; no updates required)
+  - ✅ no template changes required for this amendment
 -->
 
 # Blend Colour Game Constitution
@@ -111,7 +104,8 @@ constraints:
   multiplayer behavior MAY be specified only where the authoritative documents
   define it.
 - The following ambiguities MUST remain marked as `clarification required`
-  unless the authoritative documents are updated: tie-break rule behavior,
+  until they are resolved through the documented clarification stage or the
+  authoritative documents are updated: tie-break rule behavior,
   room-to-single-player transitions, room locking versus waiting-state
   admission behavior, and persistence differences for guest versus
   authenticated users.
@@ -169,4 +163,4 @@ Amendment procedure:
 3. Update dependent templates and runtime guidance in the same change set.
 4. Re-run validation on affected planning artifacts before further generation.
 
-**Version**: 1.0.0 | **Ratified**: 2026-03-11 | **Last Amended**: 2026-03-11
+**Version**: 1.1.0 | **Ratified**: 2026-03-11 | **Last Amended**: 2026-03-11
