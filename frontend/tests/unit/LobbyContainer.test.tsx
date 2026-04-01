@@ -4,7 +4,24 @@ import { expect, test, vi } from "vitest";
 import LobbyContainer from "../../src/containers/LobbyContainer";
 
 
+class MockWebSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+
+  readyState = MockWebSocket.OPEN;
+
+  constructor(_url: string) {}
+
+  addEventListener() {}
+
+  close() {
+    this.readyState = 3;
+  }
+}
+
+
 test("creates a room and shows host and members in the lobby", async () => {
+  vi.stubGlobal("WebSocket", MockWebSocket);
   vi.stubGlobal(
     "fetch",
     vi
@@ -36,6 +53,29 @@ test("creates a room and shows host and members in the lobby", async () => {
       .mockResolvedValueOnce({
         ok: true,
         status: 201,
+        json: async () => ({
+          gameplay: {
+            matchId: "match-1",
+            mode: "multiplayer",
+            matchStatus: "active_round",
+            currentRoundNumber: 1,
+            round: {
+              roundId: "round-1",
+              roundNumber: 1,
+              roundStatus: "active_blending",
+              targetColor: [80, 90, 100],
+              baseColorSet: [[255, 0, 0], [0, 255, 0], [0, 0, 255]],
+              timeLimit: 60,
+              remainingSeconds: 59,
+            },
+            submissions: [],
+            results: [],
+          },
+        }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
         json: async () => ({
           gameplay: {
             matchId: "match-1",

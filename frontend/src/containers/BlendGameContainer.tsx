@@ -9,11 +9,20 @@ import ResultsContainer from "./ResultsContainer";
 interface BlendGameContainerProps {
   mode: GameMode;
   roomId?: string;
+  initialMatchId?: string;
 }
 
 
-export default function BlendGameContainer({ mode, roomId }: BlendGameContainerProps) {
-  const { gameplay, errorMessage, isLoading, submitColor } = useGameplayState({ mode, roomId });
+export default function BlendGameContainer({
+  mode,
+  roomId,
+  initialMatchId,
+}: BlendGameContainerProps) {
+  const { gameplay, errorMessage, isLoading, submitColor } = useGameplayState({
+    mode,
+    roomId,
+    initialMatchId,
+  });
   const [blendedColor, setBlendedColor] = useState<number[]>([128, 128, 128]);
 
   if (isLoading) {

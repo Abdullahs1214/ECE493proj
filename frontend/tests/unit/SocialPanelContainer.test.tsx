@@ -4,7 +4,24 @@ import { expect, test, vi } from "vitest";
 import SocialPanelContainer from "../../src/containers/SocialPanelContainer";
 
 
+class MockWebSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+
+  readyState = MockWebSocket.OPEN;
+
+  constructor(_url: string) {}
+
+  addEventListener() {}
+
+  close() {
+    this.readyState = 3;
+  }
+}
+
+
 test("renders social state and submits a preset message", async () => {
+  vi.stubGlobal("WebSocket", MockWebSocket);
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce({

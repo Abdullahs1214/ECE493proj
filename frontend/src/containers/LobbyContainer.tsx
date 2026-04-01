@@ -3,6 +3,7 @@ import { useState } from "react";
 import BlendGameContainer from "./BlendGameContainer";
 import LobbyPanel from "../components/LobbyPanel";
 import { useRoomState } from "../hooks/useRoomState";
+import { startGameplay } from "../services/apiClient";
 import type { Session } from "../types/game";
 
 interface LobbyContainerProps {
@@ -11,10 +12,17 @@ interface LobbyContainerProps {
 
 
 export default function LobbyContainer({ session }: LobbyContainerProps) {
-  const { room, errorMessage, setErrorMessage, createRoom, joinRoom, leaveRoom } =
-    useRoomState();
+  const {
+    room,
+    activeMatchId,
+    errorMessage,
+    setErrorMessage,
+    setActiveMatchId,
+    createRoom,
+    joinRoom,
+    leaveRoom,
+  } = useRoomState();
   const [roomIdInput, setRoomIdInput] = useState("");
-  const [gameplayStarted, setGameplayStarted] = useState(false);
 
   async function handleCreateRoom() {
     try {
@@ -40,20 +48,31 @@ export default function LobbyContainer({ session }: LobbyContainerProps) {
   async function handleLeaveRoom() {
     try {
       await leaveRoom();
-      setGameplayStarted(false);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to leave room.");
     }
   }
 
-  function handleStartGameplay() {
-    if (room) {
-      setGameplayStarted(true);
+  async function handleStartGameplay() {
+    if (!room) {
+      return;
+    }
+    try {
+      const gameplay = await startGameplay("multiplayer", room.roomId);
+      setActiveMatchId(gameplay.matchId);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to start gameplay.");
     }
   }
 
-  if (room && gameplayStarted) {
-    return <BlendGameContainer mode="multiplayer" roomId={room.roomId} />;
+  if (room && activeMatchId) {
+    return (
+      <BlendGameContainer
+        mode="multiplayer"
+        roomId={room.roomId}
+        initialMatchId={activeMatchId}
+      />
+    );
   }
 
   return (

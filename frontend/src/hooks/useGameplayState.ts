@@ -1,23 +1,30 @@
 import { useEffect, useState } from "react";
 
 import { getGameplayState, startGameplay, submitGameplayColor } from "../services/apiClient";
+import { subscribeToMatch } from "../services/realtimeClient";
 import type { GameMode, GameplayState } from "../types/game";
 
 interface UseGameplayStateArgs {
   mode: GameMode;
   roomId?: string;
+  initialMatchId?: string;
 }
 
 
-export function useGameplayState({ mode, roomId }: UseGameplayStateArgs) {
+export function useGameplayState({ mode, roomId, initialMatchId }: UseGameplayStateArgs) {
   const [gameplay, setGameplay] = useState<GameplayState | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [realtimeReady, setRealtimeReady] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    startGameplay(mode, roomId)
+    const loadGameplay = initialMatchId
+      ? getGameplayState(initialMatchId)
+      : startGameplay(mode, roomId);
+
+    loadGameplay
       .then((state) => {
         if (!active) {
           return;
@@ -36,10 +43,46 @@ export function useGameplayState({ mode, roomId }: UseGameplayStateArgs) {
     return () => {
       active = false;
     };
-  }, [mode, roomId]);
+  }, [initialMatchId, mode, roomId]);
 
   useEffect(() => {
-    if (!gameplay || gameplay.matchStatus !== "active_round") {
+    if (!gameplay) {
+      return;
+    }
+
+    setRealtimeReady(false);
+    return subscribeToMatch(
+      gameplay.matchId,
+      (message) => {
+        if (message.event === "connection_ready") {
+          setRealtimeReady(true);
+          return;
+        }
+        if (
+          message.event === "round_start_update" ||
+          message.event === "timer_update" ||
+          message.event === "submission_receipt_update" ||
+          message.event === "scoring_update" ||
+          message.event === "result_publication"
+        ) {
+          if (message.gameplay) {
+            setGameplay(message.gameplay);
+            setErrorMessage(null);
+          }
+          return;
+        }
+        if (message.event === "submission_rejection_update") {
+          setErrorMessage(message.error ?? "Submission rejected.");
+        }
+      },
+      () => {
+        setRealtimeReady(false);
+      },
+    );
+  }, [gameplay?.matchId]);
+
+  useEffect(() => {
+    if (!gameplay || gameplay.matchStatus !== "active_round" || realtimeReady) {
       return;
     }
 
@@ -53,7 +96,7 @@ export function useGameplayState({ mode, roomId }: UseGameplayStateArgs) {
     }, 1000);
 
     return () => window.clearInterval(intervalId);
-  }, [gameplay]);
+  }, [gameplay, realtimeReady]);
 
   async function submitColor(blendedColor: number[]) {
     if (!gameplay) {
@@ -72,6 +115,7 @@ export function useGameplayState({ mode, roomId }: UseGameplayStateArgs) {
     gameplay,
     errorMessage,
     isLoading,
+    realtimeReady,
     submitColor,
   };
 }

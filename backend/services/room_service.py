@@ -8,6 +8,7 @@ from apps.rooms.validators import (
     validate_display_name_is_unique_in_room,
     validate_room_is_joinable,
 )
+from websockets.presence_publisher import publish_room_closed, publish_room_state
 
 
 def _serialize_member(membership: RoomMembership) -> dict[str, Any]:
@@ -46,6 +47,7 @@ def create_room(player: PlayerIdentity) -> Room:
         membership_status=RoomMembership.MembershipStatus.ACTIVE,
     )
     room.refresh_from_db()
+    publish_room_state(room)
     return room
 
 
@@ -69,6 +71,7 @@ def join_room(player: PlayerIdentity, room_id: str) -> Room:
         membership.save(update_fields=["membership_status"])
 
     room.refresh_from_db()
+    publish_room_state(room)
     return room
 
 
@@ -85,9 +88,11 @@ def leave_room(player: PlayerIdentity, room_id: str) -> tuple[bool, Room | None]
     if is_host:
         room.room_status = Room.RoomStatus.CLOSED
         room.save(update_fields=["room_status"])
+        publish_room_closed(room)
         room.memberships.all().delete()
         return True, None
 
     membership.delete()
     room.refresh_from_db()
+    publish_room_state(room)
     return False, room

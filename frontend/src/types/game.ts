@@ -6,6 +6,17 @@ export type RoomStatus = "open" | "closed";
 export type MembershipStatus = "active" | "disconnected" | "waiting_for_next_game";
 export type MatchStatus = "waiting_for_players" | "active_round" | "scoring" | "results" | "ended";
 export type RoundStatus = "active_blending" | "submission_closed" | "scoring" | "results";
+export type RealtimeEvent =
+  | "connection_ready"
+  | "room_state_update"
+  | "match_start_update"
+  | "round_start_update"
+  | "timer_update"
+  | "submission_receipt_update"
+  | "submission_rejection_update"
+  | "scoring_update"
+  | "result_publication"
+  | "social_interaction_update";
 
 export interface PlayerIdentity {
   playerId: string;
@@ -120,4 +131,20 @@ export interface SocialInteractionState {
     upvoteCount: number;
     highlightCount: number;
   } | null;
+}
+
+export interface RealtimeRoomMessage {
+  event: RealtimeEvent;
+  roomId?: string;
+  roomClosed?: boolean;
+  room?: Room | null;
+  matchId?: string;
+}
+
+export interface RealtimeMatchMessage {
+  event: RealtimeEvent;
+  matchId?: string;
+  gameplay?: GameplayState;
+  playerId?: string;
+  error?: string;
 }

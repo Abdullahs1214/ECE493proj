@@ -15,6 +15,11 @@ from engine.round_engine import (
     register_submission,
 )
 from services.history_service import record_score_history
+from websockets.results_publisher import publish_result_publication, publish_scoring_update
+from websockets.submission_publisher import (
+    publish_submission_receipt,
+    publish_submission_rejection,
+)
 
 
 def _match_players(match: Match) -> list[PlayerIdentity]:
@@ -173,9 +178,17 @@ def submit_color(player: PlayerIdentity, match_id: str, blended_color: list[int]
     if round_instance is None:
         raise ValueError("Match round was not found.")
 
-    register_submission(round_instance, player, blended_color)
+    try:
+        register_submission(round_instance, player, blended_color)
+    except ValueError as exc:
+        publish_submission_rejection(match_id, player, str(exc))
+        raise
     finalize_round_if_ready(match)
     _record_history_for_match(match)
+    publish_submission_receipt(match)
+    if match.match_status in [Match.MatchStatus.RESULTS, Match.MatchStatus.ENDED]:
+        publish_scoring_update(match)
+        publish_result_publication(match)
     return match
 
 

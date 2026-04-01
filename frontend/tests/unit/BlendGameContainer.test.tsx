@@ -4,7 +4,24 @@ import { expect, test, vi } from "vitest";
 import BlendGameContainer from "../../src/containers/BlendGameContainer";
 
 
+class MockWebSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+
+  readyState = MockWebSocket.OPEN;
+
+  constructor(_url: string) {}
+
+  addEventListener() {}
+
+  close() {
+    this.readyState = 3;
+  }
+}
+
+
 test("starts gameplay and submits a blended color", async () => {
+  vi.stubGlobal("WebSocket", MockWebSocket);
   const fetchMock = vi
     .fn()
     .mockResolvedValueOnce({

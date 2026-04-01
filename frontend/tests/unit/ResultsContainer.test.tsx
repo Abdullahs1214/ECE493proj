@@ -4,7 +4,24 @@ import { expect, test, vi } from "vitest";
 import ResultsContainer from "../../src/containers/ResultsContainer";
 
 
+class MockWebSocket {
+  static CONNECTING = 0;
+  static OPEN = 1;
+
+  readyState = MockWebSocket.OPEN;
+
+  constructor(_url: string) {}
+
+  addEventListener() {}
+
+  close() {
+    this.readyState = 3;
+  }
+}
+
+
 test("renders gameplay results with social state integration", async () => {
+  vi.stubGlobal("WebSocket", MockWebSocket);
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({

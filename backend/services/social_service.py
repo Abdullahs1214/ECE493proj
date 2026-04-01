@@ -7,6 +7,7 @@ from apps.accounts.models import PlayerIdentity
 from apps.gameplay.models import Match, Round, Submission
 from apps.rooms.models import RoomMembership
 from apps.social.models import SocialInteraction
+from websockets.results_publisher import publish_social_interaction
 
 
 PRESET_MESSAGES = (
@@ -181,6 +182,7 @@ def submit_social_interaction(
             interaction_type=interaction_type,
             preset_message=preset_message,
         )
+        publish_social_interaction(match_id)
         return
 
     SocialInteraction.objects.get_or_create(
@@ -190,6 +192,7 @@ def submit_social_interaction(
         target_submission=submission,
         defaults={"preset_message": ""},
     )
+    publish_social_interaction(match_id)
 
 
 def get_social_state(player: PlayerIdentity, match_id: str) -> dict[str, Any]:

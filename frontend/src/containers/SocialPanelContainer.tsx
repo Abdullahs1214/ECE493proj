@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import SocialPanel from "../components/SocialPanel";
 import { getSocialState, submitSocialInteraction } from "../services/apiClient";
+import { subscribeToMatch } from "../services/realtimeClient";
 import type { SocialInteractionEntry, SocialInteractionState } from "../types/game";
 
 interface SocialPanelContainerProps {
@@ -42,6 +43,24 @@ export default function SocialPanelContainer({
     return () => {
       active = false;
     };
+  }, [matchId, onStateChange]);
+
+  useEffect(() => {
+    return subscribeToMatch(matchId, (message) => {
+      if (message.event !== "social_interaction_update") {
+        return;
+      }
+
+      getSocialState(matchId)
+        .then((state) => {
+          setSocial(state);
+          setErrorMessage(null);
+          onStateChange?.(state);
+        })
+        .catch((error) => {
+          setErrorMessage(error instanceof Error ? error.message : "Unable to load social state.");
+        });
+    });
   }, [matchId, onStateChange]);
 
   async function submitAndRefresh(
