@@ -44,6 +44,11 @@ body {
   margin-top: 12px;
 }
 
+.social-submission-row {
+  display: grid;
+  gap: 8px;
+}
+
 input {
   display: block;
   width: 100%;
@@ -61,6 +66,12 @@ button {
   color: #f8fbfc;
   cursor: pointer;
   padding: 10px 16px;
+  margin-right: 8px;
+}
+
+button:disabled {
+  opacity: 0.6;
+  cursor: default;
 }
 
 .color-preview {

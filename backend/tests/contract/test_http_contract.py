@@ -144,6 +144,57 @@ def test_history_retrieval_returns_room_and_identity_scopes() -> None:
 
 
 @pytest.mark.django_db
+def test_social_submission_and_retrieval_flow() -> None:
+    client = Client()
+    client.post(
+        "/sessions/guest/",
+        data='{"displayName":"Social Player"}',
+        content_type="application/json",
+    )
+    start_response = client.post(
+        "/gameplay/start/",
+        data='{"mode":"single_player"}',
+        content_type="application/json",
+    )
+    match_id = start_response.json()["gameplay"]["matchId"]
+    submit_response = client.post(
+        "/gameplay/submit/",
+        data=f'{{"matchId":"{match_id}","blendedColor":[10,20,30]}}',
+        content_type="application/json",
+    )
+
+    state_response = client.get(f"/social/state/?matchId={match_id}")
+    assert state_response.status_code == 200
+    submission_id = state_response.json()["social"]["submissionSummaries"][0]["submissionId"]
+
+    social_submit_response = client.post(
+        "/social/submit/",
+        data=(
+            f'{{"matchId":"{match_id}","interactionType":"upvote",'
+            f'"targetSubmissionId":"{submission_id}"}}'
+        ),
+        content_type="application/json",
+    )
+    assert social_submit_response.status_code == 201
+    assert social_submit_response.json()["social"]["crowdFavorite"]["submissionId"] == submission_id
+
+    preset_submit_response = client.post(
+        "/social/submit/",
+        data='{"matchId":"%s","interactionType":"preset_message","presetMessage":"Nice blend!"}'
+        % match_id,
+        content_type="application/json",
+    )
+    assert preset_submit_response.status_code == 201
+
+    social_state_response = client.get(f"/social/state/?matchId={match_id}")
+    assert social_state_response.status_code == 200
+    social_payload = social_state_response.json()["social"]
+    assert social_payload["submissionSummaries"][0]["upvoteCount"] == 1
+    assert social_payload["interactions"][-1]["presetMessage"] == "Nice blend!"
+    assert social_payload["presetMessages"] == ["Nice blend!", "Great match!", "So close!"]
+
+
+@pytest.mark.django_db
 def test_oauth_placeholder_endpoints_are_not_implemented() -> None:
     client = Client()
 

@@ -1,4 +1,12 @@
-import type { GameplayState, HistoryEntry, PlayerIdentity, Room, Session } from "../types/game";
+import type {
+  GameplayState,
+  HistoryEntry,
+  PlayerIdentity,
+  Room,
+  Session,
+  SocialInteractionEntry,
+  SocialInteractionState,
+} from "../types/game";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -146,4 +154,36 @@ export async function getHistory(): Promise<{
     method: "GET",
   });
   return payload.history;
+}
+
+export async function getSocialState(matchId: string): Promise<SocialInteractionState> {
+  const response = await fetch(
+    `${API_BASE_URL}/social/state/?matchId=${encodeURIComponent(matchId)}`,
+    {
+      credentials: "include",
+    },
+  );
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+  const payload = (await response.json()) as { social: SocialInteractionState };
+  return payload.social;
+}
+
+export async function submitSocialInteraction(
+  matchId: string,
+  interactionType: SocialInteractionEntry["interactionType"],
+  targetSubmissionId?: string,
+  presetMessage?: string,
+): Promise<SocialInteractionState> {
+  const payload = await request<{ social: SocialInteractionState }>("/social/submit/", {
+    method: "POST",
+    body: JSON.stringify({
+      matchId,
+      interactionType,
+      targetSubmissionId,
+      presetMessage,
+    }),
+  });
+  return payload.social;
 }

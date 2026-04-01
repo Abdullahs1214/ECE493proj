@@ -87,3 +87,37 @@ export interface HistoryEntry {
   similarityPercentage: number;
   rank: number;
 }
+
+export interface SocialInteractionEntry {
+  socialInteractionId: string;
+  interactionType: "upvote" | "highlight" | "preset_message";
+  playerId: string;
+  displayName: string;
+  targetSubmissionId: string | null;
+  targetDisplayName: string | null;
+  presetMessage: string;
+}
+
+export interface SocialSubmissionSummary {
+  submissionId: string;
+  playerId: string;
+  displayName: string;
+  upvoteCount: number;
+  highlightCount: number;
+  hasUpvoted: boolean;
+  hasHighlighted: boolean;
+}
+
+export interface SocialInteractionState {
+  presetMessages: string[];
+  interactions: SocialInteractionEntry[];
+  submissionSummaries: SocialSubmissionSummary[];
+  crowdFavorite: {
+    submissionId: string;
+    playerId: string;
+    displayName: string;
+    reactionCount: number;
+    upvoteCount: number;
+    highlightCount: number;
+  } | null;
+}

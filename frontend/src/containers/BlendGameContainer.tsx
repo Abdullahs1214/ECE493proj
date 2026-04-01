@@ -25,7 +25,13 @@ export default function BlendGameContainer({ mode, roomId }: BlendGameContainerP
   }
 
   if (gameplay.matchStatus === "results" || gameplay.matchStatus === "ended") {
-    return <ResultsContainer round={gameplay.round} results={gameplay.results} />;
+    return (
+      <ResultsContainer
+        matchId={gameplay.matchId}
+        round={gameplay.round}
+        results={gameplay.results}
+      />
+    );
   }
 
   return (

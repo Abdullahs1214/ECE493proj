@@ -1,12 +1,46 @@
-import { render, screen } from "@testing-library/react";
-import { expect, test } from "vitest";
+import { render, screen, waitFor } from "@testing-library/react";
+import { expect, test, vi } from "vitest";
 
 import ResultsContainer from "../../src/containers/ResultsContainer";
 
 
-test("renders gameplay results", () => {
+test("renders gameplay results with social state integration", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        social: {
+          presetMessages: ["Nice blend!", "Great match!", "So close!"],
+          interactions: [],
+          submissionSummaries: [
+            {
+              submissionId: "submission-1",
+              playerId: "player-1",
+              displayName: "Winner",
+              upvoteCount: 2,
+              highlightCount: 1,
+              hasUpvoted: false,
+              hasHighlighted: false,
+            },
+          ],
+          crowdFavorite: {
+            submissionId: "submission-1",
+            playerId: "player-1",
+            displayName: "Winner",
+            reactionCount: 3,
+            upvoteCount: 2,
+            highlightCount: 1,
+          },
+        },
+      }),
+    }),
+  );
+
   render(
     <ResultsContainer
+      matchId="match-1"
       round={{
         roundId: "round-1",
         roundNumber: 1,
@@ -33,4 +67,10 @@ test("renders gameplay results", () => {
 
   expect(screen.getByText("Round Results")).toBeInTheDocument();
   expect(screen.getByText(/Winner/)).toBeInTheDocument();
+
+  await waitFor(() => {
+    expect(screen.getByText(/3 reactions/)).toBeInTheDocument();
+  });
+
+  vi.unstubAllGlobals();
 });

@@ -5,6 +5,7 @@ from api.views.auth_views import oauth_complete_view, oauth_start_view
 from api.views.gameplay_views import gameplay_state_view, start_gameplay_view, submit_color_view
 from api.views.history_views import history_view, profile_view
 from api.views.room_views import create_room_view, join_room_view, leave_room_view
+from api.views.social_views import social_state_view, submit_social_view
 from api.views.session_views import (
     current_session_view,
     guest_entry_view,
@@ -29,4 +30,6 @@ urlpatterns = [
     path("gameplay/start/", start_gameplay_view, name="gameplay-start"),
     path("gameplay/submit/", submit_color_view, name="gameplay-submit"),
     path("gameplay/state/", gameplay_state_view, name="gameplay-state"),
+    path("social/submit/", submit_social_view, name="social-submit"),
+    path("social/state/", social_state_view, name="social-state"),
 ]

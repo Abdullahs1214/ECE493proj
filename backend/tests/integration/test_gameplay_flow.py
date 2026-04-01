@@ -37,3 +37,18 @@ class GameplayFlowTests(TestCase):
         history_response = client.get("/history/")
         self.assertEqual(history_response.status_code, 200)
         self.assertEqual(len(history_response.json()["history"]["roomScopedHistory"]), 1)
+
+        social_response = client.post(
+            "/social/submit/",
+            data='{"matchId":"%s","interactionType":"preset_message","presetMessage":"Nice blend!"}'
+            % match_id,
+            content_type="application/json",
+        )
+        self.assertEqual(social_response.status_code, 201)
+
+        social_state_response = client.get(f"/social/state/?matchId={match_id}")
+        self.assertEqual(social_state_response.status_code, 200)
+        self.assertEqual(
+            social_state_response.json()["social"]["interactions"][0]["presetMessage"],
+            "Nice blend!",
+        )

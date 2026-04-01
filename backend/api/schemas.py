@@ -27,5 +27,9 @@ def history_response(history: dict[str, Any]) -> dict[str, Any]:
     return {"history": history}
 
 
+def social_response(social: dict[str, Any]) -> dict[str, Any]:
+    return {"social": social}
+
+
 def error_response(message: str) -> dict[str, str]:
     return {"error": message}
