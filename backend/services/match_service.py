@@ -14,6 +14,7 @@ from engine.round_engine import (
     finalize_round_if_ready,
     register_submission,
 )
+from services.history_service import record_score_history
 
 
 def _match_players(match: Match) -> list[PlayerIdentity]:
@@ -94,6 +95,16 @@ def serialize_match_state(match: Match) -> dict[str, Any]:
     }
 
 
+def _record_history_for_match(match: Match) -> None:
+    if match.match_status not in [Match.MatchStatus.RESULTS, Match.MatchStatus.ENDED]:
+        return
+    round_instance = match.rounds.order_by("-round_number").first()
+    if round_instance is None:
+        return
+    for score_record in round_instance.score_records.select_related("player").all():
+        record_score_history(score_record)
+
+
 @transaction.atomic
 def start_single_player_match(player: PlayerIdentity) -> Match:
     match = Match.objects.create(
@@ -164,6 +175,7 @@ def submit_color(player: PlayerIdentity, match_id: str, blended_color: list[int]
 
     register_submission(round_instance, player, blended_color)
     finalize_round_if_ready(match)
+    _record_history_for_match(match)
     return match
 
 
@@ -182,4 +194,5 @@ def get_match_state(player: PlayerIdentity, match_id: str) -> Match:
             raise ValueError("Player is not active in the room for this match.")
 
     finalize_round_if_ready(match)
+    _record_history_for_match(match)
     return match

@@ -33,3 +33,7 @@ class GameplayFlowTests(TestCase):
         state_response = client.get(f"/gameplay/state/?matchId={match_id}")
         self.assertEqual(state_response.status_code, 200)
         self.assertEqual(state_response.json()["gameplay"]["results"][0]["rank"], 1)
+
+        history_response = client.get("/history/")
+        self.assertEqual(history_response.status_code, 200)
+        self.assertEqual(len(history_response.json()["history"]["roomScopedHistory"]), 1)

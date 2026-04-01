@@ -23,5 +23,9 @@ def gameplay_response(gameplay: dict[str, Any]) -> dict[str, Any]:
     return {"gameplay": gameplay}
 
 
+def history_response(history: dict[str, Any]) -> dict[str, Any]:
+    return {"history": history}
+
+
 def error_response(message: str) -> dict[str, str]:
     return {"error": message}

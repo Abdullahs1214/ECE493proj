@@ -117,6 +117,33 @@ def test_gameplay_start_submit_and_state_flow() -> None:
 
 
 @pytest.mark.django_db
+def test_history_retrieval_returns_room_and_identity_scopes() -> None:
+    client = Client()
+
+    client.post(
+        "/sessions/guest/",
+        data='{"displayName":"History Player"}',
+        content_type="application/json",
+    )
+    start_response = client.post(
+        "/gameplay/start/",
+        data='{"mode":"single_player"}',
+        content_type="application/json",
+    )
+    match_id = start_response.json()["gameplay"]["matchId"]
+    client.post(
+        "/gameplay/submit/",
+        data=f'{{"matchId":"{match_id}","blendedColor":[10,20,30]}}',
+        content_type="application/json",
+    )
+
+    history_response = client.get("/history/")
+    assert history_response.status_code == 200
+    assert len(history_response.json()["history"]["roomScopedHistory"]) == 1
+    assert history_response.json()["history"]["identityScopedHistory"] == []
+
+
+@pytest.mark.django_db
 def test_oauth_placeholder_endpoints_are_not_implemented() -> None:
     client = Client()
 

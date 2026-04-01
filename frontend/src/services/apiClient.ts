@@ -1,4 +1,4 @@
-import type { GameplayState, PlayerIdentity, Room, Session } from "../types/game";
+import type { GameplayState, HistoryEntry, PlayerIdentity, Room, Session } from "../types/game";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -134,4 +134,16 @@ export async function getGameplayState(matchId: string) {
 
   const payload = (await response.json()) as { gameplay: GameplayState };
   return payload.gameplay;
+}
+
+export async function getHistory(): Promise<{
+  roomScopedHistory: HistoryEntry[];
+  identityScopedHistory: HistoryEntry[];
+}> {
+  const payload = await request<{
+    history: { roomScopedHistory: HistoryEntry[]; identityScopedHistory: HistoryEntry[] };
+  }>("/history/", {
+    method: "GET",
+  });
+  return payload.history;
 }

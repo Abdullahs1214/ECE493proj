@@ -75,3 +75,15 @@ export interface GameplayState {
   submissions: GameplaySubmission[];
   results: GameplayResult[];
 }
+
+export interface HistoryEntry {
+  scoreHistoryEntryId: string;
+  historyScope: "room_scoped" | "identity_scoped";
+  roomId: string | null;
+  roundId: string;
+  scoreRecordId: string;
+  displayName: string;
+  score: number;
+  similarityPercentage: number;
+  rank: number;
+}

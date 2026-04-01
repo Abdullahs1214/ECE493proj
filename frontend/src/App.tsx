@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import HistoryContainer from "./containers/HistoryContainer";
 import EntryContainer from "./containers/EntryContainer";
 import { getHealth } from "./services/apiClient";
 
@@ -37,6 +38,7 @@ export default function App() {
         <p aria-live="polite">Backend status: {healthState}</p>
       </section>
       <EntryContainer />
+      <HistoryContainer />
     </main>
   );
 }
