@@ -31,27 +31,7 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-- Requirement Traceability: Every planned requirement, assumption, and task
-  group maps to `Blend_Color_Game_User_Stories.md`,
-  `Blend_Colour_Game_Use_Cases_Scenarios_ATs.md`, `architecture_note.md`,
-  `coding-standard-python.md`, or `coding-standard-frontend.md`.
-- Non-Invention Rule: Any behavior not fully defined by the authoritative
-  inputs is recorded as `clarification required`; no invented actors, flows,
-  permissions, persistence rules, APIs, or scoring rules appear in the plan.
-- Architecture Gate: The plan preserves a server-authoritative design with a
-  React + TypeScript frontend, a Django backend, WebSockets for real-time
-  gameplay updates, and HTTP APIs for standard operations.
-- Backend Discipline Gate: Gameplay logic, validation, and state transitions
-  are assigned to backend service or engine modules; Django views remain thin.
-- Frontend Discipline Gate: The frontend reflects server state, uses functional
-  React + TypeScript patterns, and does not become the source of truth for
-  gameplay rules.
-- Ambiguity Gate: Tie-break behavior, room-to-single-player transitions, room
-  locking versus waiting-state admission, and guest versus authenticated
-  persistence differences remain unresolved unless clarified by authoritative
-  sources.
-- Validation Gate: The plan includes explicit validation work for APIs,
-  WebSockets, and user-story compliance before downstream artifact generation.
+[Gates determined based on constitution file]
 
 ## Project Structure
 
@@ -88,20 +68,17 @@ tests/
 ├── integration/
 └── unit/
 
-# [REMOVE IF UNUSED] Option 2: Web application (Blend Colour Game default)
+# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
 backend/
-├── [django apps]/
-├── services/
-├── engine/
-├── api/
-├── websockets/
+├── src/
+│   ├── models/
+│   ├── services/
+│   └── api/
 └── tests/
 
 frontend/
 ├── src/
 │   ├── components/
-│   ├── containers/
-│   ├── hooks/
 │   ├── pages/
 │   └── services/
 └── tests/

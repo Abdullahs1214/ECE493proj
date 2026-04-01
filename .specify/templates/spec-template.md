@@ -5,14 +5,6 @@
 **Status**: Draft  
 **Input**: User description: "$ARGUMENTS"
 
-**Authoritative Sources**: `Blend_Color_Game_User_Stories.md`,
-`Blend_Colour_Game_Use_Cases_Scenarios_ATs.md`, `architecture_note.md`,
-`coding-standard-python.md`, `coding-standard-frontend.md`
-
-**Traceability Note**: Every requirement in this specification MUST map back to
-the authoritative sources above. If a behavior is not fully specified there,
-mark it as `clarification required`.
-
 ## User Scenarios & Testing *(mandatory)*
 
 <!--
@@ -82,8 +74,6 @@ mark it as `clarification required`.
 
 - What happens when [boundary condition]?
 - How does system handle [error scenario]?
-- Which items remain `clarification required` because the authoritative
-  documents do not fully define them?
 
 ## Requirements *(mandatory)*
 
@@ -100,21 +90,10 @@ mark it as `clarification required`.
 - **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
 - **FR-005**: System MUST [behavior, e.g., "log all security events"]
 
-For every functional requirement, include the authoritative source identifier in
-parentheses, for example `(Source: US-10, UC-05, Architecture Note)`.
-
 *Example of marking unclear requirements:*
 
 - **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
 - **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-Do not invent resolution for these known ambiguity classes unless an
-authoritative source explicitly resolves them:
-
-- tie-break rule behavior
-- room-to-single-player transitions
-- room locking versus waiting-state admission behavior
-- persistence differences for guest versus authenticated users
 
 ### Key Entities *(include if feature involves data)*
 
@@ -134,3 +113,16 @@ authoritative source explicitly resolves them:
 - **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
 - **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
 - **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+
+## Assumptions
+
+<!--
+  ACTION REQUIRED: The content in this section represents placeholders.
+  Fill them out with the right assumptions based on reasonable defaults
+  chosen when the feature description did not specify certain details.
+-->
+
+- [Assumption about target users, e.g., "Users have stable internet connectivity"]
+- [Assumption about scope boundaries, e.g., "Mobile support is out of scope for v1"]
+- [Assumption about data/environment, e.g., "Existing authentication system will be reused"]
+- [Dependency on existing system/service, e.g., "Requires access to the existing user profile API"]

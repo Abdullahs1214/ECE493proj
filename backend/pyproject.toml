@@ -1,0 +1,27 @@
+[project]
+name = "blend-colour-game-backend"
+version = "0.1.0"
+description = "Backend scaffold for the Blend Colour Game project"
+requires-python = ">=3.12"
+dependencies = [
+  "Django>=5.1,<6.0",
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3,<9.0",
+  "pytest-django>=4.9,<5.0",
+  "ruff>=0.11,<0.12",
+]
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "blend_colour_game.settings"
+python_files = ["test_*.py"]
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]

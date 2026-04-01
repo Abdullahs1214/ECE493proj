@@ -30,14 +30,14 @@ environment for the server-authoritative web application.
 
 **Covers**: All functional areas through shared project infrastructure
 
-- [ ] T001 Create the planned backend and frontend directory structure in `backend/` and `frontend/` (FR-001, FR-038, FR-043)
-- [ ] T002 Initialize the Django project scaffold in `backend/blend_colour_game/` (FR-001, FR-010, FR-019, FR-038)
-- [ ] T003 Initialize the frontend application scaffold in `frontend/src/` (FR-012, FR-019, FR-043)
-- [ ] T004 [P] Configure backend dependency and tooling files in `backend/pyproject.toml` (FR-001, FR-038)
-- [ ] T005 [P] Configure frontend dependency and tooling files in `frontend/package.json` (FR-012, FR-038, FR-043)
-- [ ] T006 [P] Add backend environment template and settings bootstrap in `backend/.env.example` (FR-001, FR-038, FR-050)
-- [ ] T007 [P] Add frontend environment template for API and realtime configuration in `frontend/.env.example` (FR-038, FR-043)
-- [ ] T008 Configure repository-level developer commands and documentation in `README.md` (FR-001, FR-038, FR-043)
+- [X] T001 Create the planned backend and frontend directory structure in `backend/` and `frontend/` (FR-001, FR-038, FR-043)
+- [X] T002 Initialize the Django project scaffold in `backend/blend_colour_game/` (FR-001, FR-010, FR-019, FR-038)
+- [X] T003 Initialize the frontend application scaffold in `frontend/src/` (FR-012, FR-019, FR-043)
+- [X] T004 [P] Configure backend dependency and tooling files in `backend/pyproject.toml` (FR-001, FR-038)
+- [X] T005 [P] Configure frontend dependency and tooling files in `frontend/package.json` (FR-012, FR-038, FR-043)
+- [X] T006 [P] Add backend environment template and settings bootstrap in `backend/.env.example` (FR-001, FR-038, FR-050)
+- [X] T007 [P] Add frontend environment template for API and realtime configuration in `frontend/.env.example` (FR-038, FR-043)
+- [X] T008 Configure repository-level developer commands and documentation in `README.md` (FR-001, FR-038, FR-043)
 
 **Checkpoint**: Local project structure and tooling are ready for backend and
 frontend feature work.

@@ -1,29 +1,69 @@
-# ECE493proj
 # Blend Colour Game – ECE 493 Project
 
-This repository contains the planning artifacts for the Blend Colour Game system.
+This repository now contains the approved planning artifacts plus a minimal
+Phase 1 scaffold for the server-authoritative Blend Colour Game application.
 
-The following documents serve as authoritative inputs for the agentic development pipeline:
+## Authoritative Inputs
 
-- Blend_Color_Game_User_Stories.md
-- Blend_Colour_Game_Use_Cases_Scenarios_ATs.md
-- architecture_note.md
-- coding-standard-python.md
-- coding-standard-frontend.md
+- `Blend_Color_Game_User_Stories.md`
+- `Blend_Colour_Game_Use_Cases_Scenarios_ATs.md`
+- `architecture_note.md`
+- `coding-standard-python.md`
+- `coding-standard-frontend.md`
+- `docs/blueprints/shared-contract.md`
+- `docs/blueprints/base-foundation.md`
 
-The project uses a **single combined planning branch** and follows the agentic development workflow used in the ECE 493 labs.
+## Scaffold Scope
 
-Pipeline:
+The current implementation is intentionally limited to the base foundation:
 
-constitution → specify → clarify → validate → plan → checklist → validate → tasks → analyze → validate
+- Django project bootstrap in `backend/`
+- minimal app registration for reserved backend apps
+- one backend health endpoint at `GET /health/`
+- one backend smoke test
+- React + TypeScript frontend bootstrap in `frontend/`
+- one frontend health-check screen that calls the backend health endpoint
 
-Planning artifacts must preserve the server-authoritative architecture:
+No gameplay, room, scoring, history, websocket, service-layer, or detailed
+model logic has been implemented.
 
-- Frontend: React with TypeScript for UI rendering and player interaction
-- Backend: Django for authentication, room management, gameplay logic,
-  persistence, and APIs
-- Real-time gameplay updates: WebSockets
-- Standard operations: HTTP APIs
+## Backend Setup
 
-If an authoritative source does not define a behavior, downstream artifacts must
-mark it as `clarification required` instead of inventing behavior.
+1. `cd backend`
+2. Create a virtual environment and install dependencies:
+   `python -m venv .venv && source .venv/bin/activate`
+3. Install packages:
+   `python -m pip install -e .`
+4. Start the development server:
+   `python manage.py runserver`
+
+The backend will expose `http://localhost:8000/health/`.
+
+## Frontend Setup
+
+1. `cd frontend`
+2. Install dependencies:
+   `npm install`
+3. Start the development server:
+   `npm run dev`
+
+Set `VITE_API_BASE_URL` if the backend is not running at
+`http://localhost:8000`.
+
+## Development Commands
+
+Backend:
+
+- `cd backend && pytest`
+- `cd backend && ruff check .`
+
+Frontend:
+
+- `cd frontend && npm run test`
+- `cd frontend && npm run build`
+
+## Notes
+
+The project uses a single combined planning branch for specification work, but
+this scaffold follows the repository structure and naming frozen by the shared
+contract and foundation blueprint.
