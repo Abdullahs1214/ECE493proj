@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import EntryPanel from "../components/EntryPanel";
+import LobbyContainer from "./LobbyContainer";
 import { useModeSelection } from "../hooks/useModeSelection";
 import { useSessionState } from "../hooks/useSessionState";
 
@@ -32,17 +33,20 @@ export default function EntryContainer() {
   }
 
   return (
-    <EntryPanel
-      session={session}
-      loadState={loadState}
-      errorMessage={errorMessage}
-      selectedMode={mode}
-      draftDisplayName={draftDisplayName}
-      onDraftDisplayNameChange={setDraftDisplayName}
-      onGuestEntry={handleGuestEntry}
-      onRenameGuest={handleRenameGuest}
-      onLogout={handleLogout}
-      onSelectMode={selectMode}
-    />
+    <>
+      <EntryPanel
+        session={session}
+        loadState={loadState}
+        errorMessage={errorMessage}
+        selectedMode={mode}
+        draftDisplayName={draftDisplayName}
+        onDraftDisplayNameChange={setDraftDisplayName}
+        onGuestEntry={handleGuestEntry}
+        onRenameGuest={handleRenameGuest}
+        onLogout={handleLogout}
+        onSelectMode={selectMode}
+      />
+      {session && mode === "multiplayer" ? <LobbyContainer session={session} /> : null}
+    </>
   );
 }

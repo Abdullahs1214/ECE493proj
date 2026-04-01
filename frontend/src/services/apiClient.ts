@@ -1,4 +1,4 @@
-import type { PlayerIdentity, Session } from "../types/game";
+import type { PlayerIdentity, Room, Session } from "../types/game";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -74,4 +74,32 @@ export async function logoutSession(): Promise<void> {
 export async function getProfile(): Promise<PlayerIdentity> {
   const payload = await request<{ profile: PlayerIdentity }>("/profile/");
   return payload.profile;
+}
+
+export async function createRoom(): Promise<Room> {
+  const payload = await request<{ room: Room }>("/rooms/create/", {
+    method: "POST",
+    body: JSON.stringify({}),
+  });
+  return payload.room;
+}
+
+export async function joinRoom(roomId: string): Promise<Room> {
+  const payload = await request<{ room: Room }>("/rooms/join/", {
+    method: "POST",
+    body: JSON.stringify({ roomId }),
+  });
+  return payload.room;
+}
+
+export async function leaveRoom(
+  roomId: string,
+): Promise<{ leftRoom: boolean; roomClosed: boolean; room: Room | null }> {
+  return request<{ leftRoom: boolean; roomClosed: boolean; room: Room | null }>(
+    "/rooms/leave/",
+    {
+      method: "POST",
+      body: JSON.stringify({ roomId }),
+    },
+  );
 }

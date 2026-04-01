@@ -29,6 +29,30 @@ test("supports guest entry and mode selection handoff", async () => {
           },
         },
       }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 201,
+      json: async () => ({
+        room: {
+          roomId: "room-1",
+          roomStatus: "open",
+          hostPlayerId: "player-1",
+          hostDisplayName: "Guest 1",
+          members: [
+            {
+              roomMembershipId: "membership-1",
+              membershipStatus: "active",
+              joinedAt: "2026-03-31T00:00:00Z",
+              player: {
+                playerId: "player-1",
+                displayName: "Guest 1",
+                identityType: "guest",
+              },
+            },
+          ],
+        },
+      }),
     });
   vi.stubGlobal("fetch", fetchMock);
 
@@ -47,6 +71,12 @@ test("supports guest entry and mode selection handoff", async () => {
   fireEvent.click(screen.getByText("Multiplayer"));
 
   expect(screen.getByText("Selected mode: Multiplayer")).toBeInTheDocument();
+
+  fireEvent.click(screen.getByText("Create room"));
+
+  await waitFor(() => {
+    expect(screen.getByText("Room ID: room-1")).toBeInTheDocument();
+  });
 
   vi.unstubAllGlobals();
 });
