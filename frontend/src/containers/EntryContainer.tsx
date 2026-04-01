@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import BlendGameContainer from "./BlendGameContainer";
 import EntryPanel from "../components/EntryPanel";
 import LobbyContainer from "./LobbyContainer";
 import { useModeSelection } from "../hooks/useModeSelection";
@@ -46,6 +47,7 @@ export default function EntryContainer() {
         onLogout={handleLogout}
         onSelectMode={selectMode}
       />
+      {session && mode === "single_player" ? <BlendGameContainer mode="single_player" /> : null}
       {session && mode === "multiplayer" ? <LobbyContainer session={session} /> : null}
     </>
   );

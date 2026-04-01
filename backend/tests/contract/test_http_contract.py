@@ -86,6 +86,37 @@ def test_room_create_join_and_leave_flow() -> None:
 
 
 @pytest.mark.django_db
+def test_gameplay_start_submit_and_state_flow() -> None:
+    client = Client()
+
+    guest_response = client.post(
+        "/sessions/guest/",
+        data='{"displayName":"Gameplay Player"}',
+        content_type="application/json",
+    )
+    assert guest_response.status_code == 201
+
+    start_response = client.post(
+        "/gameplay/start/",
+        data='{"mode":"single_player"}',
+        content_type="application/json",
+    )
+    assert start_response.status_code == 201
+    match_id = start_response.json()["gameplay"]["matchId"]
+
+    submit_response = client.post(
+        "/gameplay/submit/",
+        data=f'{{"matchId":"{match_id}","blendedColor":[10,20,30]}}',
+        content_type="application/json",
+    )
+    assert submit_response.status_code == 200
+
+    state_response = client.get(f"/gameplay/state/?matchId={match_id}")
+    assert state_response.status_code == 200
+    assert state_response.json()["gameplay"]["matchId"] == match_id
+
+
+@pytest.mark.django_db
 def test_oauth_placeholder_endpoints_are_not_implemented() -> None:
     client = Client()
 

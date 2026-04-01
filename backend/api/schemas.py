@@ -19,5 +19,9 @@ def room_leave_response(room_closed: bool, room: dict[str, Any] | None) -> dict[
     return {"leftRoom": True, "roomClosed": room_closed, "room": room}
 
 
+def gameplay_response(gameplay: dict[str, Any]) -> dict[str, Any]:
+    return {"gameplay": gameplay}
+
+
 def error_response(message: str) -> dict[str, str]:
     return {"error": message}

@@ -2,6 +2,7 @@ from django.urls import path
 
 from api.health import health_view
 from api.views.auth_views import oauth_complete_view, oauth_start_view
+from api.views.gameplay_views import gameplay_state_view, start_gameplay_view, submit_color_view
 from api.views.history_views import profile_view
 from api.views.room_views import create_room_view, join_room_view, leave_room_view
 from api.views.session_views import (
@@ -24,4 +25,7 @@ urlpatterns = [
     path("rooms/create/", create_room_view, name="create-room"),
     path("rooms/join/", join_room_view, name="join-room"),
     path("rooms/leave/", leave_room_view, name="leave-room"),
+    path("gameplay/start/", start_gameplay_view, name="gameplay-start"),
+    path("gameplay/submit/", submit_color_view, name="gameplay-submit"),
+    path("gameplay/state/", gameplay_state_view, name="gameplay-state"),
 ]

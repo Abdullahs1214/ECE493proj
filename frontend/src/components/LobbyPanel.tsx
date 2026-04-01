@@ -10,6 +10,7 @@ interface LobbyPanelProps {
   onCreateRoom: () => void;
   onJoinRoom: () => void;
   onLeaveRoom: () => void;
+  onStartGameplay: () => void;
 }
 
 
@@ -22,6 +23,7 @@ export default function LobbyPanel({
   onCreateRoom,
   onJoinRoom,
   onLeaveRoom,
+  onStartGameplay,
 }: LobbyPanelProps) {
   return (
     <section className="status-card">
@@ -44,6 +46,9 @@ export default function LobbyPanel({
             ))}
           </ul>
           <div className="actions">
+            <button type="button" onClick={onStartGameplay}>
+              Start gameplay
+            </button>
             <button type="button" onClick={onLeaveRoom}>
               Leave room
             </button>

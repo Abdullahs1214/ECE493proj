@@ -1,4 +1,4 @@
-import type { PlayerIdentity, Room, Session } from "../types/game";
+import type { GameplayState, PlayerIdentity, Room, Session } from "../types/game";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:8000";
 
@@ -102,4 +102,36 @@ export async function leaveRoom(
       body: JSON.stringify({ roomId }),
     },
   );
+}
+
+export async function startGameplay(mode: "single_player" | "multiplayer", roomId?: string) {
+  const payload = await request<{ gameplay: GameplayState }>("/gameplay/start/", {
+    method: "POST",
+    body: JSON.stringify(roomId ? { mode, roomId } : { mode }),
+  });
+  return payload.gameplay;
+}
+
+export async function submitGameplayColor(matchId: string, blendedColor: number[]) {
+  const payload = await request<{ gameplay: GameplayState }>("/gameplay/submit/", {
+    method: "POST",
+    body: JSON.stringify({ matchId, blendedColor }),
+  });
+  return payload.gameplay;
+}
+
+export async function getGameplayState(matchId: string) {
+  const response = await fetch(
+    `${API_BASE_URL}/gameplay/state/?matchId=${encodeURIComponent(matchId)}`,
+    {
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Request failed with status ${response.status}`);
+  }
+
+  const payload = (await response.json()) as { gameplay: GameplayState };
+  return payload.gameplay;
 }

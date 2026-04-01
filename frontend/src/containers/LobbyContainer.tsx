@@ -1,5 +1,6 @@
 import { useState } from "react";
 
+import BlendGameContainer from "./BlendGameContainer";
 import LobbyPanel from "../components/LobbyPanel";
 import { useRoomState } from "../hooks/useRoomState";
 import type { Session } from "../types/game";
@@ -13,6 +14,7 @@ export default function LobbyContainer({ session }: LobbyContainerProps) {
   const { room, errorMessage, setErrorMessage, createRoom, joinRoom, leaveRoom } =
     useRoomState();
   const [roomIdInput, setRoomIdInput] = useState("");
+  const [gameplayStarted, setGameplayStarted] = useState(false);
 
   async function handleCreateRoom() {
     try {
@@ -38,9 +40,20 @@ export default function LobbyContainer({ session }: LobbyContainerProps) {
   async function handleLeaveRoom() {
     try {
       await leaveRoom();
+      setGameplayStarted(false);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to leave room.");
     }
+  }
+
+  function handleStartGameplay() {
+    if (room) {
+      setGameplayStarted(true);
+    }
+  }
+
+  if (room && gameplayStarted) {
+    return <BlendGameContainer mode="multiplayer" roomId={room.roomId} />;
   }
 
   return (
@@ -53,6 +66,7 @@ export default function LobbyContainer({ session }: LobbyContainerProps) {
       onCreateRoom={handleCreateRoom}
       onJoinRoom={handleJoinRoom}
       onLeaveRoom={handleLeaveRoom}
+      onStartGameplay={handleStartGameplay}
     />
   );
 }
