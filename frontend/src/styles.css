@@ -19,6 +19,7 @@ body {
   min-height: 100vh;
   place-items: center;
   padding: 24px;
+  gap: 24px;
 }
 
 .status-card {
@@ -28,6 +29,33 @@ body {
   background: rgba(255, 255, 255, 0.9);
   padding: 32px;
   box-shadow: 0 16px 40px rgba(18, 33, 44, 0.08);
+}
+
+.actions,
+.mode-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+input {
+  display: block;
+  width: 100%;
+  margin-top: 8px;
+  padding: 10px 12px;
+  border: 1px solid rgba(18, 33, 44, 0.2);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+button {
+  border: 0;
+  border-radius: 999px;
+  background: #12212c;
+  color: #f8fbfc;
+  cursor: pointer;
+  padding: 10px 16px;
 }
 
 .eyebrow {

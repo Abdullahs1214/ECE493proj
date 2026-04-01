@@ -1,6 +1,5 @@
-import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
-import { vi } from "vitest";
+import { expect, test, vi } from "vitest";
 
 import App from "../../src/App";
 

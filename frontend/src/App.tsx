@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import EntryContainer from "./containers/EntryContainer";
 import { getHealth } from "./services/apiClient";
 
 type HealthState = "idle" | "loading" | "ok" | "error";
@@ -35,6 +36,7 @@ export default function App() {
         <p>This frontend performs a minimal backend health check.</p>
         <p aria-live="polite">Backend status: {healthState}</p>
       </section>
+      <EntryContainer />
     </main>
   );
 }
