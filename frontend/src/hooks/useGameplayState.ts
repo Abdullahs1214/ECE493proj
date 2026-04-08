@@ -82,21 +82,21 @@ export function useGameplayState({ mode, roomId, initialMatchId }: UseGameplaySt
   }, [gameplay?.matchId]);
 
   useEffect(() => {
-    if (!gameplay || gameplay.matchStatus !== "active_round" || realtimeReady) {
-      return;
+  if (!gameplay || gameplay.matchStatus !== "active_round") {
+    return;
+  }
+
+  const intervalId = window.setInterval(async () => {
+    try {
+      const nextState = await getGameplayState(gameplay.matchId);
+      setGameplay(nextState);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to refresh gameplay.");
     }
+  }, 1000);
 
-    const intervalId = window.setInterval(async () => {
-      try {
-        const nextState = await getGameplayState(gameplay.matchId);
-        setGameplay(nextState);
-      } catch (error) {
-        setErrorMessage(error instanceof Error ? error.message : "Unable to refresh gameplay.");
-      }
-    }, 1000);
-
-    return () => window.clearInterval(intervalId);
-  }, [gameplay, realtimeReady]);
+  return () => window.clearInterval(intervalId);
+}, [gameplay]);
 
   async function submitColor(blendedColor: number[]) {
     if (!gameplay) {

@@ -27,16 +27,14 @@ export default function ResultsContainer({
   const [social, setSocial] = useState<SocialInteractionState | undefined>(undefined);
 
   function handlePlayAgain() {
-  if (onBackToMenu) {
-    onBackToMenu();
+    if (onBackToMenu) {
+      onBackToMenu();
 
-    // small delay to allow state reset
-    setTimeout(() => {
-      // reselect same mode
-      window.dispatchEvent(new CustomEvent("restart-game"));
-    }, 0);
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent("restart-game"));
+      }, 0);
+    }
   }
-}
 
   return (
     <>
@@ -54,7 +52,18 @@ export default function ResultsContainer({
           </div>
         </section>
       ) : (
-        <SocialPanelContainer matchId={matchId} onStateChange={setSocial} />
+        <>
+          <SocialPanelContainer matchId={matchId} onStateChange={setSocial} />
+          {onBackToMenu ? (
+            <section className="status-card">
+              <div className="actions">
+                <button type="button" onClick={onBackToMenu}>
+                  Back to menu
+                </button>
+              </div>
+            </section>
+          ) : null}
+        </>
       )}
     </>
   );

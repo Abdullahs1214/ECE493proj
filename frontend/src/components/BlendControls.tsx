@@ -54,8 +54,8 @@ export default function BlendControls({
 
       <div className="actions">
         <button type="button" onClick={onSubmit} disabled={disabled}>
-        {disabled ? "Submitted" : "Submit color"}
-        </button>
+  {disabled ? "Submitting..." : "Submit color"}
+</button>
       </div>
     </section>
   );
