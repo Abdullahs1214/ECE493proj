@@ -67,3 +67,29 @@ class SocialTests(TestCase):
                 "upvote",
                 str(submission.submission_id),
             )
+
+    @patch("engine.scoring_engine.random.randint", side_effect=[90, 100, 110])
+    def test_submission_reaction_requires_target_submission_id(self, _mock_randint) -> None:
+        player = create_guest_session("Player One").player
+        match = start_single_player_match(player)
+        submit_color(player, str(match.match_id), [90, 100, 110])
+
+        with self.assertRaisesMessage(
+            ValueError,
+            "targetSubmissionId is required for submission reactions.",
+        ):
+            submit_social_interaction(player, str(match.match_id), "upvote")
+
+    @patch("engine.scoring_engine.random.randint", side_effect=[90, 100, 110])
+    def test_submission_reaction_rejects_unknown_target_submission(self, _mock_randint) -> None:
+        player = create_guest_session("Player One").player
+        match = start_single_player_match(player)
+        submit_color(player, str(match.match_id), [90, 100, 110])
+
+        with self.assertRaisesMessage(ValueError, "Target submission was not found."):
+            submit_social_interaction(
+                player,
+                str(match.match_id),
+                "upvote",
+                "00000000-0000-0000-0000-000000000001",
+            )

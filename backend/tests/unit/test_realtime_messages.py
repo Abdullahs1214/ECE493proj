@@ -6,6 +6,7 @@ from websockets.messages import (
     room_state_update,
     social_interaction_update,
     submission_rejection_update,
+    timer_update,
 )
 
 
@@ -34,3 +35,9 @@ class RealtimeMessageTests(SimpleTestCase):
         self.assertEqual(payload["matchId"], "match-1")
         self.assertEqual(payload["playerId"], "player-1")
         self.assertEqual(payload["error"], "Too late.")
+
+    def test_timer_update_includes_gameplay_payload(self) -> None:
+        payload = timer_update({"matchId": "match-1", "matchStatus": "active_round"})
+
+        self.assertEqual(payload["event"], "timer_update")
+        self.assertEqual(payload["matchId"], "match-1")

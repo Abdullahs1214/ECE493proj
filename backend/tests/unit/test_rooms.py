@@ -1,5 +1,7 @@
 import pytest
 
+from apps.rooms.models import Room
+from apps.rooms.validators import validate_room_is_joinable
 from services.identity_service import create_guest_session
 from services.room_service import create_room, join_room, leave_room
 
@@ -34,3 +36,13 @@ def test_host_leaving_closes_room() -> None:
 
     assert room_closed is True
     assert remaining_room is None
+
+
+@pytest.mark.django_db
+def test_validate_room_is_joinable_rejects_closed_room() -> None:
+    host_session = create_guest_session("Host")
+    room = create_room(host_session.player)
+    room.room_status = Room.RoomStatus.CLOSED
+
+    with pytest.raises(ValueError, match="Room is not open for joining."):
+        validate_room_is_joinable(room)
