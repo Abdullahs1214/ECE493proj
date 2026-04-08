@@ -1,6 +1,6 @@
 import type { RealtimeMatchMessage, RealtimeRoomMessage } from "../types/game";
 
-const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://127.0.0.1:8000";
+const WS_BASE_URL = import.meta.env.VITE_WS_BASE_URL ?? "ws://localhost:8000";
 
 function connect<MessageType>(
   path: string,

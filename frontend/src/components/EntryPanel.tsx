@@ -30,35 +30,39 @@ export default function EntryPanel({
       ? "Single Player"
       : selectedMode === "multiplayer"
         ? "Multiplayer"
-        : "None";
+        : null;
 
   return (
     <section className="status-card">
-      <p className="eyebrow">Entry Flow</p>
-      <h2>Player Identity and Session</h2>
-      <p aria-live="polite">Session load state: {loadState}</p>
+      <p className="eyebrow">Blend Colour Game</p>
+      <h2>Welcome</h2>
+
+      {loadState === "loading" ? <p>Loading session...</p> : null}
       {errorMessage ? <p role="alert">{errorMessage}</p> : null}
 
       {session ? (
         <>
-          <p>Signed in as: {session.player.displayName}</p>
+          <p>Playing as: {session.player.displayName}</p>
+
           <label>
-            Guest display name
+            Display name
             <input
               value={draftDisplayName}
               onChange={(event) => onDraftDisplayNameChange(event.target.value)}
             />
           </label>
+
           <div className="actions">
             <button type="button" onClick={onRenameGuest}>
-              Save display name
+              Save name
             </button>
             <button type="button" onClick={onLogout}>
-              Logout
+              Log out
             </button>
           </div>
+
           <div className="mode-group">
-            <p>Choose a mode for handoff:</p>
+            <p>Choose a mode:</p>
             <button type="button" onClick={() => onSelectMode("single_player")}>
               Single Player
             </button>
@@ -66,7 +70,8 @@ export default function EntryPanel({
               Multiplayer
             </button>
           </div>
-          <p>Selected mode: {modeLabel}</p>
+
+          {modeLabel ? <p>Selected mode: {modeLabel}</p> : null}
         </>
       ) : (
         <div className="actions">

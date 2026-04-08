@@ -8,10 +8,15 @@ import type { Session } from "../types/game";
 
 interface LobbyContainerProps {
   session: Session;
+  onBackToMenu?: () => void;
+  currentPlayerId: string;
 }
 
-
-export default function LobbyContainer({ session }: LobbyContainerProps) {
+export default function LobbyContainer({
+  session,
+  onBackToMenu,
+  currentPlayerId,
+}: LobbyContainerProps) {
   const {
     room,
     activeMatchId,
@@ -71,21 +76,35 @@ export default function LobbyContainer({ session }: LobbyContainerProps) {
         mode="multiplayer"
         roomId={room.roomId}
         initialMatchId={activeMatchId}
+        currentPlayerId={currentPlayerId}
+        onBackToMenu={onBackToMenu}
       />
     );
   }
 
   return (
-    <LobbyPanel
-      session={session}
-      room={room}
-      roomIdInput={roomIdInput}
-      errorMessage={errorMessage}
-      onRoomIdInputChange={setRoomIdInput}
-      onCreateRoom={handleCreateRoom}
-      onJoinRoom={handleJoinRoom}
-      onLeaveRoom={handleLeaveRoom}
-      onStartGameplay={handleStartGameplay}
-    />
+    <>
+      {onBackToMenu ? (
+        <div className="status-card">
+          <div className="actions">
+            <button type="button" onClick={onBackToMenu}>
+              Back to menu
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      <LobbyPanel
+        session={session}
+        room={room}
+        roomIdInput={roomIdInput}
+        errorMessage={errorMessage}
+        onRoomIdInputChange={setRoomIdInput}
+        onCreateRoom={handleCreateRoom}
+        onJoinRoom={handleJoinRoom}
+        onLeaveRoom={handleLeaveRoom}
+        onStartGameplay={handleStartGameplay}
+      />
+    </>
   );
 }

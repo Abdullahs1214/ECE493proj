@@ -6,7 +6,6 @@ import LobbyContainer from "./LobbyContainer";
 import { useModeSelection } from "../hooks/useModeSelection";
 import { useSessionState } from "../hooks/useSessionState";
 
-
 export default function EntryContainer() {
   const { session, loadState, errorMessage, enterAsGuest, renameGuest, clearSession } =
     useSessionState();
@@ -14,8 +13,18 @@ export default function EntryContainer() {
   const [draftDisplayName, setDraftDisplayName] = useState("");
 
   useEffect(() => {
-    setDraftDisplayName(session?.player.displayName ?? "");
-  }, [session]);
+    function handleRestart() {
+      if (session) {
+        selectMode("single_player");
+      }
+    }
+
+    window.addEventListener("restart-game", handleRestart);
+
+    return () => {
+      window.removeEventListener("restart-game", handleRestart);
+    };
+  }, [session, selectMode]);
 
   async function handleGuestEntry() {
     await enterAsGuest();
@@ -33,8 +42,12 @@ export default function EntryContainer() {
     resetMode();
   }
 
-  return (
-    <>
+  function handleBackToMenu() {
+    resetMode();
+  }
+
+  if (!session || !mode) {
+    return (
       <EntryPanel
         session={session}
         loadState={loadState}
@@ -47,8 +60,24 @@ export default function EntryContainer() {
         onLogout={handleLogout}
         onSelectMode={selectMode}
       />
-      {session && mode === "single_player" ? <BlendGameContainer mode="single_player" /> : null}
-      {session && mode === "multiplayer" ? <LobbyContainer session={session} /> : null}
-    </>
+    );
+  }
+
+  if (mode === "single_player") {
+    return (
+      <BlendGameContainer
+        mode="single_player"
+        currentPlayerId={session.player.playerId}
+        onBackToMenu={handleBackToMenu}
+      />
+    );
+  }
+
+  return (
+    <LobbyContainer
+      session={session}
+      onBackToMenu={handleBackToMenu}
+      currentPlayerId={session.player.playerId}
+    />
   );
 }
