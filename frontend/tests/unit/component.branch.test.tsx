@@ -42,14 +42,20 @@ describe("additional component coverage", () => {
     apiClientMock.submitSocialInteraction.mockReset();
   });
 
-  test("App reflects backend health failure", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("boom")));
+  test("App renders the entry flow shell", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        status: 401,
+        ok: false,
+        json: async () => ({ error: "No active session." }),
+      }),
+    );
 
     render(<App />);
 
-    await waitFor(() => {
-      expect(screen.getByText("Backend status: error")).toBeInTheDocument();
-    });
+    await waitFor(() => expect(screen.getByText("Welcome")).toBeInTheDocument());
+    expect(screen.getByText("Continue as guest")).toBeInTheDocument();
   });
 
   test("BlendControls calls handlers on slider move and submit", () => {
@@ -84,8 +90,8 @@ describe("additional component coverage", () => {
       />,
     );
 
-    expect(screen.getByText("Host - 200 points - rank 1")).toBeInTheDocument();
-    expect(screen.getByText("Guest - 150 points - rank 2")).toBeInTheDocument();
+    expect(screen.getByText(/Host - 200 points - rank 1/)).toBeInTheDocument();
+    expect(screen.getByText(/Guest - 150 points - rank 2/)).toBeInTheDocument();
   });
 
   test("LobbyPanel toggles room and form views with errors", () => {
@@ -94,6 +100,7 @@ describe("additional component coverage", () => {
       onCreateRoom: vi.fn(),
       onJoinRoom: vi.fn(),
       onLeaveRoom: vi.fn(),
+      onDeleteRoom: vi.fn(),
       onStartGameplay: vi.fn(),
     };
 
@@ -109,6 +116,8 @@ describe("additional component coverage", () => {
       <LobbyPanel
         session={session}
         room={null}
+        availableRooms={[]}
+        currentPlayerId="p"
         roomIdInput=""
         errorMessage="no room"
         {...callbacks}
@@ -127,15 +136,30 @@ describe("additional component coverage", () => {
         room={{
           roomId: "room-1",
           roomStatus: "open",
+          joinPolicy: "open",
+          waitingPolicy: "late_join_waiting_allowed",
           hostPlayerId: "p",
           hostDisplayName: "Host",
           members: [
-            { roomMembershipId: "m1", player: { playerId: "p", identityType: "guest" as const, displayName: "Host" } },
-            { roomMembershipId: "m2", player: { playerId: "other", identityType: "guest" as const, displayName: "Guest" } },
+            {
+              roomMembershipId: "m1",
+              membershipStatus: "active",
+              joinedAt: "2026-04-01T00:00:00Z",
+              player: { playerId: "p", identityType: "guest" as const, displayName: "Host" },
+            },
+            {
+              roomMembershipId: "m2",
+              membershipStatus: "active",
+              joinedAt: "2026-04-01T00:00:00Z",
+              player: { playerId: "other", identityType: "guest" as const, displayName: "Guest" },
+            },
           ],
         }}
+        availableRooms={[]}
+        currentPlayerId="p"
         roomIdInput=""
         errorMessage={null}
+        onDeleteRoom={vi.fn()}
         {...callbacks}
       />,
     );
@@ -170,6 +194,9 @@ describe("additional component coverage", () => {
         matchId: "match",
         mode: "single_player",
         matchStatus: "results",
+        currentRoundNumber: 1,
+        totalRounds: 3,
+        canAdvance: false,
         round: {
           roundId: "round",
           roundNumber: 1,
@@ -189,7 +216,7 @@ describe("additional component coverage", () => {
     });
 
     render(<BlendGameContainer mode="single_player" />);
-    expect(screen.getByText("Score History")).toBeInTheDocument();
+    expect(screen.getByText("Match complete.")).toBeInTheDocument();
 
     // errorMessage set + no gameplay → shows errorMessage (line 33-34, primary branch of ??)
     useGameplayStateMock.useGameplayState.mockReturnValue({
@@ -248,6 +275,7 @@ describe("additional component coverage", () => {
         draftDisplayName=""
         onDraftDisplayNameChange={vi.fn()}
         onGuestEntry={vi.fn()}
+        onOAuthEntry={vi.fn()}
         onRenameGuest={vi.fn()}
         onLogout={vi.fn()}
         onSelectMode={onSelectMode}

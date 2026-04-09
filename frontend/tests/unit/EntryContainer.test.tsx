@@ -32,6 +32,26 @@ test("supports guest entry and mode selection handoff", async () => {
     })
     .mockResolvedValueOnce({
       ok: true,
+      status: 200,
+      json: async () => ({
+        history: {
+          roomScopedHistory: [],
+          identityScopedHistory: [],
+        },
+      }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ room: null }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ rooms: [] }),
+    })
+    .mockResolvedValueOnce({
+      ok: true,
       status: 201,
       json: async () => ({
         room: {
@@ -65,7 +85,7 @@ test("supports guest entry and mode selection handoff", async () => {
   fireEvent.click(screen.getByText("Continue as guest"));
 
   await waitFor(() => {
-    expect(screen.getByText("Signed in as: Guest 1")).toBeInTheDocument();
+    expect(screen.getByText("Playing as: Guest 1")).toBeInTheDocument();
   });
 
   fireEvent.click(screen.getByText("Multiplayer"));

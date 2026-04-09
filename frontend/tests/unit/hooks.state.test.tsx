@@ -12,9 +12,12 @@ const apiClientMocks = vi.hoisted(() => ({
   getCurrentSession: vi.fn(),
   logoutSession: vi.fn(),
   updateCurrentSession: vi.fn(),
+  getCurrentRoom: vi.fn(),
+  getRooms: vi.fn(),
   createRoom: vi.fn(),
   joinRoom: vi.fn(),
   leaveRoom: vi.fn(),
+  deleteRoom: vi.fn(),
   getGameplayState: vi.fn(),
   startGameplay: vi.fn(),
   submitGameplayColor: vi.fn(),
@@ -32,6 +35,9 @@ describe("state hooks", () => {
   beforeEach(() => {
     Object.values(apiClientMocks).forEach((mock) => mock.mockReset());
     Object.values(realtimeMocks).forEach((mock) => mock.mockReset());
+    apiClientMocks.getCurrentRoom.mockResolvedValue(null);
+    apiClientMocks.getRooms.mockResolvedValue([]);
+    apiClientMocks.deleteRoom.mockResolvedValue({ roomClosed: true });
   });
 
   afterEach(() => {
@@ -277,7 +283,12 @@ describe("state hooks", () => {
         matchStatus: "active_round",
         round: { remainingSeconds: 11 },
       })
-      .mockResolvedValueOnce(pollingState);
+      .mockResolvedValueOnce({
+        matchId: "match-1",
+        matchStatus: "results",
+        canAdvance: false,
+        round: { remainingSeconds: 25 },
+      });
     apiClientMocks.submitGameplayColor
       .mockRejectedValueOnce("nope")
       .mockResolvedValueOnce(submittedState);
@@ -337,7 +348,7 @@ describe("state hooks", () => {
       await intervalCallback?.();
     });
     await waitFor(() => {
-      expect(activeHook.result.current.gameplay?.round.remainingSeconds).toBe(25);
+      expect(activeHook.result.current.gameplay?.matchStatus).toBe("results");
     });
 
     await act(async () => {
@@ -493,6 +504,10 @@ describe("state hooks", () => {
     apiClientMocks.createRoom.mockResolvedValueOnce({
       roomId: "room-nc",
       hostDisplayName: "Host",
+      roomStatus: "open",
+      joinPolicy: "open",
+      waitingPolicy: "late_join_waiting_allowed",
+      hostPlayerId: "player-1",
       members: [],
     });
 
@@ -509,7 +524,15 @@ describe("state hooks", () => {
         event: "room_state_update",
         roomId: "room-nc",
         roomClosed: false,
-        room: { roomId: "room-nc", hostDisplayName: "Host", members: [] },
+        room: {
+          roomId: "room-nc",
+          hostDisplayName: "Host",
+          roomStatus: "open",
+          joinPolicy: "open",
+          waitingPolicy: "late_join_waiting_allowed",
+          hostPlayerId: "player-1",
+          members: [],
+        },
       });
     });
 

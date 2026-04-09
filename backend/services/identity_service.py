@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from typing import Any
 
+from django.utils import timezone
+
 from apps.accounts.models import PlayerIdentity, Session
+
+GUEST_SESSION_TIMEOUT_MINUTES = 30
+AUTHENTICATED_SESSION_TIMEOUT_DAYS = 7
 
 
 def _serialize_identity(identity: PlayerIdentity) -> dict[str, Any]:
@@ -47,6 +52,35 @@ def create_guest_session(display_name: str | None = None) -> Session:
     )
 
 
+def create_authenticated_session(
+    oauth_identity: str,
+    display_name: str,
+    profile_avatar: str = "",
+) -> Session:
+    identity, created = PlayerIdentity.objects.get_or_create(
+        oauth_identity=oauth_identity,
+        defaults={
+            "identity_type": PlayerIdentity.IdentityType.AUTHENTICATED,
+            "display_name": display_name.strip(),
+            "profile_avatar": profile_avatar,
+        },
+    )
+    if not created:
+        identity.identity_type = PlayerIdentity.IdentityType.AUTHENTICATED
+        identity.display_name = display_name.strip() or identity.display_name
+        identity.profile_avatar = profile_avatar
+        identity.save(update_fields=["identity_type", "display_name", "profile_avatar"])
+
+    Session.objects.filter(player=identity, status=Session.Status.ACTIVE).update(
+        status=Session.Status.LOGGED_OUT,
+    )
+    return Session.objects.create(
+        player=identity,
+        session_type=Session.SessionType.AUTHENTICATED,
+        status=Session.Status.ACTIVE,
+    )
+
+
 def get_active_session(session_id: str | None) -> Session | None:
     if not session_id:
         return None
@@ -55,6 +89,21 @@ def get_active_session(session_id: str | None) -> Session | None:
         .filter(session_id=session_id, status=Session.Status.ACTIVE)
         .first()
     )
+    if session is None:
+        return None
+
+    expiry_threshold = (
+        timezone.now() - timezone.timedelta(minutes=GUEST_SESSION_TIMEOUT_MINUTES)
+        if session.session_type == Session.SessionType.GUEST
+        else timezone.now() - timezone.timedelta(days=AUTHENTICATED_SESSION_TIMEOUT_DAYS)
+    )
+
+    if session.last_activity_at < expiry_threshold:
+        session.status = Session.Status.EXPIRED
+        session.save(update_fields=["status", "last_activity_at"])
+        return None
+
+    session.save(update_fields=["last_activity_at"])
     return session
 
 

@@ -23,6 +23,21 @@ def validate_color_ranges(color: Sequence[int]) -> list[int]:
     return normalized
 
 
+def validate_mix_weights(weights: Sequence[int], expected_count: int) -> list[int]:
+    if len(weights) != expected_count:
+        raise ValueError("Mix weights must match the available source colors.")
+
+    normalized = [int(weight) for weight in weights]
+    for weight in normalized:
+        if weight < 0 or weight > 100:
+            raise ValueError("Mix weights must be between 0 and 100.")
+
+    if sum(normalized) <= 0:
+        raise ValueError("At least one source color must be used in the blend.")
+
+    return normalized
+
+
 def validate_tie_break_basis(tie_break_basis: str) -> None:
     if tie_break_basis != TIE_BREAK_BASIS:
         raise ValueError("Unsupported tie-break basis.")

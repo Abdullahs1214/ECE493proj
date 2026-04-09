@@ -8,6 +8,7 @@ interface EntryPanelProps {
   draftDisplayName: string;
   onDraftDisplayNameChange: (value: string) => void;
   onGuestEntry: () => void;
+  onOAuthEntry: (provider: "google" | "github") => void;
   onRenameGuest: () => void;
   onLogout: () => void;
   onSelectMode: (mode: GameMode) => void;
@@ -21,6 +22,7 @@ export default function EntryPanel({
   draftDisplayName,
   onDraftDisplayNameChange,
   onGuestEntry,
+  onOAuthEntry,
   onRenameGuest,
   onLogout,
   onSelectMode,
@@ -43,23 +45,39 @@ export default function EntryPanel({
       {session ? (
         <>
           <p>Playing as: {session.player.displayName}</p>
+          <p>Session type: {session.sessionType}</p>
+          {session.player.profileAvatar ? (
+            <p>Profile avatar: available</p>
+          ) : (
+            <p>Profile avatar: none</p>
+          )}
 
-          <label>
-            Display name
-            <input
-              value={draftDisplayName}
-              onChange={(event) => onDraftDisplayNameChange(event.target.value)}
-            />
-          </label>
+          {session.sessionType === "guest" ? (
+            <>
+              <label>
+                Display name
+                <input
+                  value={draftDisplayName}
+                  onChange={(event) => onDraftDisplayNameChange(event.target.value)}
+                />
+              </label>
 
-          <div className="actions">
-            <button type="button" onClick={onRenameGuest}>
-              Save name
-            </button>
-            <button type="button" onClick={onLogout}>
-              Log out
-            </button>
-          </div>
+              <div className="actions">
+                <button type="button" onClick={onRenameGuest}>
+                  Save name
+                </button>
+                <button type="button" onClick={onLogout}>
+                  Log out
+                </button>
+              </div>
+            </>
+          ) : (
+            <div className="actions">
+              <button type="button" onClick={onLogout}>
+                Log out
+              </button>
+            </div>
+          )}
 
           <div className="mode-group">
             <p>Choose a mode:</p>
@@ -77,6 +95,12 @@ export default function EntryPanel({
         <div className="actions">
           <button type="button" onClick={onGuestEntry}>
             Continue as guest
+          </button>
+          <button type="button" onClick={() => onOAuthEntry("google")}>
+            Sign in with Google
+          </button>
+          <button type="button" onClick={() => onOAuthEntry("github")}>
+            Sign in with GitHub
           </button>
         </div>
       )}

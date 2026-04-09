@@ -94,6 +94,7 @@ async def _forward_broker_messages(send, queue: asyncio.Queue[dict[str, Any]]) -
 async def _forward_timer_updates(send, player, match_id: str) -> None:
     from services.match_service import get_match_state, serialize_match_state
 
+    previous_status = None
     while True:
         await asyncio.sleep(1)
         try:
@@ -102,9 +103,16 @@ async def _forward_timer_updates(send, player, match_id: str) -> None:
             return
 
         gameplay = await sync_to_async(serialize_match_state)(match)
-        if gameplay["matchStatus"] not in ["active_round", "scoring"]:
+        if gameplay["matchStatus"] == "ended":
             return
-        await _send_json(send, timer_update(gameplay))
+        if gameplay["matchStatus"] == "results":
+            previous_status = gameplay["matchStatus"]
+            continue
+        if gameplay["matchStatus"] in ["active_round", "scoring"]:
+            if previous_status == "results":
+                await _send_json(send, round_start_update(gameplay))
+            await _send_json(send, timer_update(gameplay))
+            previous_status = gameplay["matchStatus"]
 
 
 async def _receive_until_disconnect(receive) -> None:
@@ -115,7 +123,7 @@ async def _receive_until_disconnect(receive) -> None:
 
 
 async def _handle_room_socket(scope, receive, send, player, room_id: str) -> None:
-    from services.room_service import serialize_room
+    from services.room_service import mark_player_disconnected, serialize_room
 
     membership = await sync_to_async(
         lambda: (
@@ -123,8 +131,8 @@ async def _handle_room_socket(scope, receive, send, player, room_id: str) -> Non
             .filter(
                 room_id=room_id,
                 player=player,
-                membership_status=RoomMembership.MembershipStatus.ACTIVE,
             )
+            .exclude(membership_status=RoomMembership.MembershipStatus.DISCONNECTED)
             .first()
         )
     )()
@@ -154,6 +162,7 @@ async def _handle_room_socket(scope, receive, send, player, room_id: str) -> Non
     finally:
         forward_task.cancel()
         broker.unsubscribe(topic, queue)
+        await sync_to_async(mark_player_disconnected)(player, room_id)
 
 
 async def _initial_match_messages(send, player, match_id: str) -> None:

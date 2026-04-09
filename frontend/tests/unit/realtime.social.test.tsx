@@ -145,7 +145,7 @@ describe("realtime client and social panel", () => {
     const unsubscribe = subscribeToRoom("room-1", onMessage, onClose);
     const socket = MockWebSocket.instances[0];
 
-    expect(socket.url).toBe("ws://127.0.0.1:8000/ws/rooms/room-1/");
+    expect(socket.url).toBe("ws://localhost:8000/ws/rooms/room-1/");
 
     socket.emit("message", {
       data: JSON.stringify({ event: "room_state_update", roomId: "room-1" }),
@@ -167,7 +167,7 @@ describe("realtime client and social panel", () => {
     const unsubscribe = subscribeToMatch("match-1", onMessage);
     const socket = MockWebSocket.instances[0];
 
-    expect(socket.url).toBe("ws://127.0.0.1:8000/ws/matches/match-1/");
+    expect(socket.url).toBe("ws://localhost:8000/ws/matches/match-1/");
 
     socket.readyState = MockWebSocket.CLOSED;
     unsubscribe();

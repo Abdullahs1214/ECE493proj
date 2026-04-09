@@ -4,6 +4,7 @@ from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_GET, require_http_methods
 
+from api.exceptions import APIError, require_active_session, translate_api_error
 from api.schemas import error_response, session_response
 from services.identity_service import (
     create_guest_session,
@@ -40,25 +41,34 @@ def guest_entry_view(request):
 
 @require_GET
 def current_session_view(request):
-    session = get_active_session(request.session.get(SESSION_KEY))
-    if session is None:
-        return JsonResponse(error_response("No active session."), status=401)
+    try:
+        session = require_active_session(
+            request,
+            session_key=SESSION_KEY,
+            resolver=get_active_session,
+        )
+    except Exception as exc:
+        return translate_api_error(exc)
     return JsonResponse(session_response(serialize_session(session)))
 
 
 @csrf_exempt
 @require_http_methods(["PATCH"])
 def update_session_view(request):
-    session = get_active_session(request.session.get(SESSION_KEY))
-    if session is None:
-        return JsonResponse(error_response("No active session."), status=401)
+    try:
+        session = require_active_session(
+            request,
+            session_key=SESSION_KEY,
+            resolver=get_active_session,
+        )
+        payload = _load_request_data(request)
+        display_name = str(payload.get("displayName", "")).strip()
+        if not display_name:
+            raise APIError("displayName is required.")
+        updated_session = update_guest_display_name(session, display_name)
+    except Exception as exc:
+        return translate_api_error(exc)
 
-    payload = _load_request_data(request)
-    display_name = str(payload.get("displayName", "")).strip()
-    if not display_name:
-        return JsonResponse(error_response("displayName is required."), status=400)
-
-    updated_session = update_guest_display_name(session, display_name)
     return JsonResponse(session_response(serialize_session(updated_session)))
 
 

@@ -33,6 +33,8 @@ to planning
 ## Notes
 
 - All checklist items pass on the current draft.
+- Revalidated on 2026-04-08 against the integrated implementation and updated
+  planning artifacts.
 - Clarifications applied to the specification:
   - Ties are resolved using exact unrounded color distance.
   - Late joiners are admitted to the room immediately in a waiting state until

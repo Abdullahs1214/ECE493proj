@@ -10,6 +10,19 @@ import type {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
 
+async function toError(response: Response): Promise<Error> {
+  try {
+    const payload = (await response.json()) as Partial<{ error: string }>;
+    if (typeof payload.error === "string" && payload.error.trim()) {
+      return new Error(payload.error);
+    }
+  } catch {
+    // Ignore invalid or empty error payloads and fall back to status-based errors.
+  }
+
+  return new Error(`Request failed with status ${response.status}`);
+}
+
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
@@ -21,7 +34,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   });
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw await toError(response);
   }
 
   return response.json() as Promise<T>;
@@ -46,6 +59,50 @@ export async function createGuestSession(displayName?: string): Promise<Session>
   return payload.session;
 }
 
+export async function startOAuthSignIn(provider: "google" | "github"): Promise<{
+  provider: string;
+  state: string;
+  authorizationUrl: string;
+}> {
+  const response = await fetch(
+    `${API_BASE_URL}/auth/oauth/start/?provider=${encodeURIComponent(provider)}`,
+    {
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw await toError(response);
+  }
+
+  return response.json();
+}
+
+export async function completeOAuthSignIn(
+  provider: "google" | "github",
+  state: string,
+): Promise<Session> {
+  const response = await fetch(
+    `${API_BASE_URL}/auth/oauth/complete/?provider=${encodeURIComponent(provider)}&state=${encodeURIComponent(state)}`,
+    {
+      credentials: "include",
+    },
+  );
+
+  if (!response.ok) {
+    throw await toError(response);
+  }
+
+  const payload = (await response.json()) as { session: Session };
+  return payload.session;
+}
+
+export async function signInWithOAuth(provider: "google" | "github"): Promise<Session> {
+  const { authorizationUrl } = await startOAuthSignIn(provider);
+  window.location.assign(authorizationUrl);
+  return new Promise(() => undefined);
+}
+
 export async function getCurrentSession(): Promise<Session | null> {
   const response = await fetch(`${API_BASE_URL}/sessions/current/`, {
     credentials: "include",
@@ -56,7 +113,7 @@ export async function getCurrentSession(): Promise<Session | null> {
   }
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw await toError(response);
   }
 
   const payload = (await response.json()) as Partial<{ session: Session }>;
@@ -92,6 +149,30 @@ export async function createRoom(): Promise<Room> {
   return payload.room;
 }
 
+export async function getRooms(): Promise<Room[]> {
+  const payload = await request<{ rooms: Room[] }>("/rooms/", {
+    method: "GET",
+  });
+  return payload.rooms;
+}
+
+export async function getCurrentRoom(): Promise<Room | null> {
+  const response = await fetch(`${API_BASE_URL}/rooms/current/`, {
+    credentials: "include",
+  });
+
+  if (response.status === 401) {
+    return null;
+  }
+
+  if (!response.ok) {
+    throw await toError(response);
+  }
+
+  const payload = (await response.json()) as { room: Room | null };
+  return payload.room ?? null;
+}
+
 export async function joinRoom(roomId: string): Promise<Room> {
   const payload = await request<{ room: Room }>("/rooms/join/", {
     method: "POST",
@@ -112,6 +193,13 @@ export async function leaveRoom(
   );
 }
 
+export async function deleteRoom(roomId: string): Promise<{ roomClosed: boolean }> {
+  return request<{ roomClosed: boolean }>("/rooms/delete/", {
+    method: "POST",
+    body: JSON.stringify({ roomId }),
+  });
+}
+
 export async function startGameplay(mode: "single_player" | "multiplayer", roomId?: string) {
   const payload = await request<{ gameplay: GameplayState }>("/gameplay/start/", {
     method: "POST",
@@ -120,10 +208,10 @@ export async function startGameplay(mode: "single_player" | "multiplayer", roomI
   return payload.gameplay;
 }
 
-export async function submitGameplayColor(matchId: string, blendedColor: number[]) {
+export async function submitGameplayColor(matchId: string, mixWeights: number[]) {
   const payload = await request<{ gameplay: GameplayState }>("/gameplay/submit/", {
     method: "POST",
-    body: JSON.stringify({ matchId, blendedColor }),
+    body: JSON.stringify({ matchId, mixWeights }),
   });
   return payload.gameplay;
 }
@@ -137,7 +225,7 @@ export async function getGameplayState(matchId: string) {
   );
 
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw await toError(response);
   }
 
   const payload = (await response.json()) as { gameplay: GameplayState };
@@ -164,7 +252,7 @@ export async function getSocialState(matchId: string): Promise<SocialInteraction
     },
   );
   if (!response.ok) {
-    throw new Error(`Request failed with status ${response.status}`);
+    throw await toError(response);
   }
   const payload = (await response.json()) as { social: SocialInteractionState };
   return payload.social;

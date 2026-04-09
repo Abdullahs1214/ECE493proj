@@ -1,12 +1,19 @@
 from __future__ import annotations
 
+from django.conf import settings
 from django.utils import timezone
 
 from apps.accounts.models import PlayerIdentity
 from apps.gameplay.models import Match, Round, Submission
-from apps.gameplay.validators import validate_color_ranges, validate_submission_window
+from apps.gameplay.validators import (
+    validate_color_ranges,
+    validate_mix_weights,
+    validate_submission_window,
+)
 from apps.rooms.models import RoomMembership
 from engine.scoring_engine import build_score_records, generate_base_color_set, generate_target_color
+
+DEFAULT_MATCH_ROUNDS = getattr(settings, "DEFAULT_MATCH_ROUNDS", 3)
 
 
 def create_round_for_match(match: Match) -> Round:
@@ -20,8 +27,34 @@ def create_round_for_match(match: Match) -> Round:
     )
 
 
-def register_submission(round_instance: Round, player: PlayerIdentity, blended_color: list[int]) -> Submission:
-    validate_color_ranges(blended_color)
+def blend_color_from_weights(base_color_set: list[list[int]], mix_weights: list[int]) -> list[int]:
+    normalized_weights = validate_mix_weights(mix_weights, len(base_color_set))
+    total_weight = sum(normalized_weights)
+    return [
+        round(
+            sum(
+                source_color[channel_index] * normalized_weights[color_index]
+                for color_index, source_color in enumerate(base_color_set)
+            )
+            / total_weight
+        )
+        for channel_index in range(3)
+    ]
+
+
+def register_submission(
+    round_instance: Round,
+    player: PlayerIdentity,
+    blended_color: list[int] | None = None,
+    mix_weights: list[int] | None = None,
+) -> Submission:
+    if mix_weights is not None:
+        blended_color = blend_color_from_weights(round_instance.base_color_set, mix_weights)
+    elif blended_color is not None:
+        blended_color = validate_color_ranges(blended_color)
+    else:
+        raise ValueError("A blended color or mix weights are required.")
+
     validate_submission_window(round_instance)
 
     if Submission.objects.filter(round=round_instance, player=player).exists():
@@ -105,5 +138,10 @@ def finalize_round_if_ready(match: Match) -> None:
     round_instance.round_status = Round.RoundStatus.RESULTS
     round_instance.save(update_fields=["round_status"])
     match.match_status = Match.MatchStatus.RESULTS
-    match.ended_at = timezone.now()
+    if match.current_round_number >= DEFAULT_MATCH_ROUNDS:
+        match.ended_at = timezone.now()
+        match.save(update_fields=["match_status", "ended_at"])
+        return
+
+    match.ended_at = None
     match.save(update_fields=["match_status", "ended_at"])

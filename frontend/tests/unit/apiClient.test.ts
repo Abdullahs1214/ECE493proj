@@ -98,7 +98,7 @@ describe("apiClient", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       1,
-      "http://127.0.0.1:8000/sessions/guest/",
+      "http://localhost:8000/sessions/guest/",
       expect.objectContaining({
         method: "POST",
         credentials: "include",
@@ -108,12 +108,12 @@ describe("apiClient", () => {
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       8,
-      "http://127.0.0.1:8000/gameplay/start/",
+      "http://localhost:8000/gameplay/start/",
       expect.objectContaining({ body: JSON.stringify({ mode: "single_player" }) }),
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       12,
-      "http://127.0.0.1:8000/social/submit/",
+      "http://localhost:8000/social/submit/",
       expect.objectContaining({
         method: "POST",
         body: JSON.stringify({
@@ -162,12 +162,12 @@ describe("apiClient", () => {
 
     expect(fetchMock).toHaveBeenNthCalledWith(
       4,
-      "http://127.0.0.1:8000/gameplay/state/?matchId=match%20value%2F1",
+      "http://localhost:8000/gameplay/state/?matchId=match%20value%2F1",
       { credentials: "include" },
     );
     expect(fetchMock).toHaveBeenNthCalledWith(
       5,
-      "http://127.0.0.1:8000/gameplay/start/",
+      "http://localhost:8000/gameplay/start/",
       expect.objectContaining({
         body: JSON.stringify({ mode: "multiplayer", roomId: "room value/2" }),
       }),
@@ -202,7 +202,7 @@ describe("apiClient", () => {
     await expect(createGuestSession("Casey")).resolves.toEqual({ sessionId: "guest-named" });
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "http://127.0.0.1:8000/sessions/guest/",
+      "http://localhost:8000/sessions/guest/",
       expect.objectContaining({
         body: JSON.stringify({ displayName: "Casey" }),
       }),

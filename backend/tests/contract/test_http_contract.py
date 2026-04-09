@@ -195,8 +195,13 @@ def test_social_submission_and_retrieval_flow() -> None:
 
 
 @pytest.mark.django_db
-def test_oauth_placeholder_endpoints_are_not_implemented() -> None:
+def test_oauth_endpoints_validate_provider_and_state() -> None:
     client = Client()
 
-    assert client.get("/auth/oauth/start/").status_code == 501
-    assert client.get("/auth/oauth/complete/").status_code == 501
+    start_response = client.get("/auth/oauth/start/")
+    assert start_response.status_code == 400
+    assert start_response.json()["error"] == "Unsupported OAuth provider."
+
+    complete_response = client.get("/auth/oauth/complete/?provider=google")
+    assert complete_response.status_code == 400
+    assert complete_response.json()["error"] == "OAuth provider could not be verified."

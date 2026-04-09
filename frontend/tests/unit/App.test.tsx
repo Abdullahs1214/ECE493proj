@@ -3,27 +3,27 @@ import { expect, test, vi } from "vitest";
 
 import App from "../../src/App";
 
-test("renders health check success state", async () => {
+test("renders the entry screen", async () => {
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
-      ok: true,
-      json: async () => ({ status: "ok" }),
+      status: 401,
+      ok: false,
+      json: async () => ({ error: "No active session." }),
     }),
   );
 
   render(<App />);
 
-  expect(screen.getByText("Foundation Scaffold")).toBeInTheDocument();
-
   await waitFor(() => {
-    expect(screen.getByText("Backend status: ok")).toBeInTheDocument();
+    expect(screen.getByText("Welcome")).toBeInTheDocument();
   });
+  expect(screen.getByText("Continue as guest")).toBeInTheDocument();
 
   vi.unstubAllGlobals();
 });
 
-test("App cleanup cancels in-flight health request on unmount", async () => {
+test("App cleanup handles in-flight session request on unmount", async () => {
   vi.stubGlobal("fetch", vi.fn().mockImplementation(() => new Promise(() => {})));
 
   const { unmount } = render(<App />);

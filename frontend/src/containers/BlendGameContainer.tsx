@@ -5,6 +5,32 @@ import { useGameplayState } from "../hooks/useGameplayState";
 import type { GameMode } from "../types/game";
 import ResultsContainer from "./ResultsContainer";
 
+function defaultMixWeights(colorCount: number) {
+  return Array.from({ length: colorCount }, () => 100);
+}
+
+function blendFromWeights(baseColorSet: number[][], mixWeights: number[]) {
+  if (!baseColorSet.length) {
+    return [0, 0, 0];
+  }
+
+  const totalWeight = mixWeights.reduce((sum, weight) => sum + weight, 0);
+  const resolvedWeights =
+    totalWeight > 0 ? mixWeights : Array.from({ length: baseColorSet.length }, () => 1);
+  const resolvedTotalWeight =
+    totalWeight > 0 ? totalWeight : resolvedWeights.reduce((sum, weight) => sum + weight, 0);
+
+  return [0, 1, 2].map((channelIndex) =>
+    Math.round(
+      baseColorSet.reduce(
+        (sum, sourceColor, colorIndex) =>
+          sum + sourceColor[channelIndex] * (resolvedWeights[colorIndex] ?? 0),
+        0,
+      ) / resolvedTotalWeight,
+    ),
+  );
+}
+
 interface BlendGameContainerProps {
   mode: GameMode;
   roomId?: string;
@@ -26,13 +52,21 @@ export default function BlendGameContainer({
     initialMatchId,
   });
 
-  const [blendedColor, setBlendedColor] = useState<number[]>([128, 128, 128]);
+  const [mixWeights, setMixWeights] = useState<number[]>([100, 100, 100]);
   const [hasLocallySubmitted, setHasLocallySubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const blendedColor = gameplay
+    ? blendFromWeights(gameplay.round.baseColorSet, mixWeights)
+    : [128, 128, 128];
+
   useEffect(() => {
+    if (!gameplay) {
+      return;
+    }
     setHasLocallySubmitted(false);
     setIsSubmitting(false);
+    setMixWeights(defaultMixWeights(gameplay.round.baseColorSet.length));
   }, [gameplay?.matchId, gameplay?.round.roundId]);
 
   if (isLoading) {
@@ -50,6 +84,9 @@ export default function BlendGameContainer({
         round={gameplay.round}
         results={gameplay.results}
         mode={mode}
+        currentRoundNumber={gameplay.currentRoundNumber}
+        totalRounds={gameplay.totalRounds}
+        canAdvance={gameplay.canAdvance}
         onBackToMenu={onBackToMenu}
       />
     );
@@ -69,11 +106,15 @@ export default function BlendGameContainer({
     setIsSubmitting(true);
 
     try {
-      await submitColor(blendedColor);
+      await submitColor(mixWeights);
       setHasLocallySubmitted(true);
     } finally {
       setIsSubmitting(false);
     }
+  }
+
+  function handleResetBlend() {
+    setMixWeights(defaultMixWeights(gameplay.round.baseColorSet.length));
   }
 
   return (
@@ -116,8 +157,11 @@ export default function BlendGameContainer({
 
       {!hasSubmitted ? (
         <BlendControls
+          baseColorSet={gameplay.round.baseColorSet}
+          mixWeights={mixWeights}
           blendedColor={blendedColor}
-          onBlendedColorChange={setBlendedColor}
+          onMixWeightsChange={setMixWeights}
+          onReset={handleResetBlend}
           onSubmit={handleSubmit}
           disabled={isSubmitting}
         />

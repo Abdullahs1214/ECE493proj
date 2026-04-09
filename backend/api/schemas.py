@@ -15,6 +15,10 @@ def room_response(room: dict[str, Any]) -> dict[str, Any]:
     return {"room": room}
 
 
+def room_list_response(rooms: list[dict[str, Any]]) -> dict[str, Any]:
+    return {"rooms": rooms}
+
+
 def room_leave_response(room_closed: bool, room: dict[str, Any] | None) -> dict[str, Any]:
     return {"leftRoom": True, "roomClosed": room_closed, "room": room}
 

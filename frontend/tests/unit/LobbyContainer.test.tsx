@@ -28,11 +28,23 @@ test("creates a room and shows host and members in the lobby", async () => {
       .fn()
       .mockResolvedValueOnce({
         ok: true,
+        status: 200,
+        json: async () => ({ room: null }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ rooms: [] }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
         status: 201,
         json: async () => ({
           room: {
             roomId: "room-1",
             roomStatus: "open",
+            joinPolicy: "open",
+            waitingPolicy: "late_join_waiting_allowed",
             hostPlayerId: "player-1",
             hostDisplayName: "Host Player",
             members: [
@@ -59,6 +71,8 @@ test("creates a room and shows host and members in the lobby", async () => {
             mode: "multiplayer",
             matchStatus: "active_round",
             currentRoundNumber: 1,
+            totalRounds: 3,
+            canAdvance: false,
             round: {
               roundId: "round-1",
               roundNumber: 1,
@@ -82,6 +96,8 @@ test("creates a room and shows host and members in the lobby", async () => {
             mode: "multiplayer",
             matchStatus: "active_round",
             currentRoundNumber: 1,
+            totalRounds: 3,
+            canAdvance: false,
             round: {
               roundId: "round-1",
               roundNumber: 1,

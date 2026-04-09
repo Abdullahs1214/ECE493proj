@@ -4,6 +4,16 @@ Use this walkthrough to validate the planned system behavior before task
 generation. The steps below mirror the authoritative requirements and the
 project specification.
 
+## Current Validation Status
+
+- Backend smoke validation has been run for guest entry, authenticated-session
+  entry, room creation and joining, multiplayer match start, late-join waiting
+  behavior, reconnect handling, multi-round progression, history retrieval, and
+  social interaction retrieval.
+- Frontend runtime validation has been run through repeated production builds.
+- Remaining manual validation focus is provider-specific OAuth credential
+  verification and deeper repeated multiplayer disconnect or reconnect cycles.
+
 ## 1. Validate Player Entry
 
 1. Start the system and open the game entry screen.

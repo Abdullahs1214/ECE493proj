@@ -45,6 +45,10 @@ import SocialPanelContainer from "../../src/containers/SocialPanelContainer";
 describe("container edge coverage", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    apiClientMock.getHistory.mockResolvedValue({
+      roomScopedHistory: [],
+      identityScopedHistory: [],
+    });
   });
 
   afterEach(() => {
@@ -60,6 +64,7 @@ describe("container edge coverage", () => {
 
     lobbyHookMock.useRoomState.mockReturnValue({
       room: null,
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: "Existing error",
       setErrorMessage,
@@ -67,6 +72,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     apiClientMock.startGameplay.mockRejectedValueOnce("bad-start");
 
@@ -106,10 +112,13 @@ describe("container edge coverage", () => {
       room: {
         roomId: "room-1",
         roomStatus: "open",
+        joinPolicy: "open",
+        waitingPolicy: "late_join_waiting_allowed",
         hostPlayerId: "player-1",
         hostDisplayName: "Host",
         members: [],
       },
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage,
@@ -117,6 +126,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     rerender(
       <LobbyContainer
@@ -149,10 +159,13 @@ describe("container edge coverage", () => {
       room: {
         roomId: "room-1",
         roomStatus: "open",
+        joinPolicy: "open",
+        waitingPolicy: "late_join_waiting_allowed",
         hostPlayerId: "player-1",
         hostDisplayName: "Host",
         members: [],
       },
+      availableRooms: [],
       activeMatchId: "match-1",
       errorMessage: null,
       setErrorMessage,
@@ -160,6 +173,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     rerender(
       <LobbyContainer
@@ -188,6 +202,7 @@ describe("container edge coverage", () => {
     const leaveRoom = vi.fn().mockRejectedValueOnce(new Error("leave failed"));
     lobbyHookMock.useRoomState.mockReturnValue({
       room: null,
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage,
@@ -195,6 +210,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     apiClientMock.startGameplay.mockRejectedValueOnce(new Error("start failed"));
 
@@ -230,10 +246,13 @@ describe("container edge coverage", () => {
       room: {
         roomId: "room-err",
         roomStatus: "open",
+        joinPolicy: "open",
+        waitingPolicy: "late_join_waiting_allowed",
         hostPlayerId: "player-1",
         hostDisplayName: "Host",
         members: [],
       },
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage,
@@ -241,6 +260,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     view.rerender(
       <LobbyContainer
@@ -523,6 +543,7 @@ describe("container edge coverage", () => {
     const resetMode = vi.fn();
     lobbyHookMock.useRoomState.mockReturnValue({
       room: null,
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage: vi.fn(),
@@ -530,6 +551,7 @@ describe("container edge coverage", () => {
       createRoom: vi.fn(),
       joinRoom: vi.fn(),
       leaveRoom: vi.fn(),
+      deleteRoom: vi.fn(),
     });
 
     sessionHookMock.useSessionState.mockReturnValue({
@@ -548,6 +570,7 @@ describe("container edge coverage", () => {
       loadState: "ready",
       errorMessage: null,
       enterAsGuest,
+      enterWithOAuth: vi.fn(),
       renameGuest,
       clearSession,
     });
@@ -559,17 +582,17 @@ describe("container edge coverage", () => {
 
     const view = render(<EntryContainer />);
 
-    fireEvent.change(screen.getByLabelText("Guest display name"), { target: { value: "   " } });
-    fireEvent.click(screen.getByText("Save display name"));
+    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "   " } });
+    fireEvent.click(screen.getByText("Save name"));
     expect(renameGuest).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Guest display name"), { target: { value: "Casey" } });
-    fireEvent.click(screen.getByText("Save display name"));
+    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Casey" } });
+    fireEvent.click(screen.getByText("Save name"));
     await waitFor(() => {
       expect(renameGuest).toHaveBeenCalledWith("Casey");
     });
 
-    fireEvent.click(screen.getByText("Logout"));
+    fireEvent.click(screen.getByText("Log out"));
     await waitFor(() => {
       expect(clearSession).toHaveBeenCalledTimes(1);
     });
@@ -596,6 +619,7 @@ describe("container edge coverage", () => {
       loadState: "ready",
       errorMessage: null,
       enterAsGuest,
+      enterWithOAuth: vi.fn(),
       renameGuest,
       clearSession,
     });
@@ -613,6 +637,7 @@ describe("container edge coverage", () => {
 
     lobbyHookMock.useRoomState.mockReturnValue({
       room: null,
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage,
@@ -620,6 +645,7 @@ describe("container edge coverage", () => {
       createRoom: vi.fn().mockResolvedValue(undefined),
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
 
     const session = {
@@ -639,7 +665,16 @@ describe("container edge coverage", () => {
 
     // rerender with a room so Leave room button is visible
     lobbyHookMock.useRoomState.mockReturnValue({
-      room: { roomId: "room-ok", roomStatus: "open", hostPlayerId: "p1", hostDisplayName: "Host", members: [] },
+      room: {
+        roomId: "room-ok",
+        roomStatus: "open",
+        joinPolicy: "open",
+        waitingPolicy: "late_join_waiting_allowed",
+        hostPlayerId: "p1",
+        hostDisplayName: "Host",
+        members: [],
+      },
+      availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
       setErrorMessage,
@@ -647,6 +682,7 @@ describe("container edge coverage", () => {
       createRoom: vi.fn().mockResolvedValue(undefined),
       joinRoom,
       leaveRoom,
+      deleteRoom: vi.fn(),
     });
     view.rerender(<LobbyContainer session={session} />);
 

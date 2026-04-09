@@ -4,7 +4,14 @@ from api.health import health_view
 from api.views.auth_views import oauth_complete_view, oauth_start_view
 from api.views.gameplay_views import gameplay_state_view, start_gameplay_view, submit_color_view
 from api.views.history_views import history_view, profile_view
-from api.views.room_views import create_room_view, join_room_view, leave_room_view
+from api.views.room_views import (
+    browse_rooms_view,
+    create_room_view,
+    current_room_view,
+    delete_room_view,
+    join_room_view,
+    leave_room_view,
+)
 from api.views.social_views import social_state_view, submit_social_view
 from api.views.session_views import (
     current_session_view,
@@ -25,8 +32,11 @@ urlpatterns = [
     path("profile/", profile_view, name="profile"),
     path("history/", history_view, name="history"),
     path("rooms/create/", create_room_view, name="create-room"),
+    path("rooms/", browse_rooms_view, name="browse-rooms"),
+    path("rooms/current/", current_room_view, name="current-room"),
     path("rooms/join/", join_room_view, name="join-room"),
     path("rooms/leave/", leave_room_view, name="leave-room"),
+    path("rooms/delete/", delete_room_view, name="delete-room"),
     path("gameplay/start/", start_gameplay_view, name="gameplay-start"),
     path("gameplay/submit/", submit_color_view, name="gameplay-submit"),
     path("gameplay/state/", gameplay_state_view, name="gameplay-state"),

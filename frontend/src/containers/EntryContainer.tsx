@@ -2,12 +2,13 @@ import { useEffect, useState } from "react";
 
 import BlendGameContainer from "./BlendGameContainer";
 import EntryPanel from "../components/EntryPanel";
+import HistoryContainer from "./HistoryContainer";
 import LobbyContainer from "./LobbyContainer";
 import { useModeSelection } from "../hooks/useModeSelection";
 import { useSessionState } from "../hooks/useSessionState";
 
 export default function EntryContainer() {
-  const { session, loadState, errorMessage, enterAsGuest, renameGuest, clearSession } =
+  const { session, loadState, errorMessage, enterAsGuest, enterWithOAuth, renameGuest, clearSession } =
     useSessionState();
   const { mode, selectMode, resetMode } = useModeSelection();
   const [draftDisplayName, setDraftDisplayName] = useState("");
@@ -30,6 +31,10 @@ export default function EntryContainer() {
     await enterAsGuest();
   }
 
+  async function handleOAuthEntry(provider: "google" | "github") {
+    await enterWithOAuth(provider);
+  }
+
   async function handleRenameGuest() {
     if (!draftDisplayName.trim()) {
       return;
@@ -48,18 +53,22 @@ export default function EntryContainer() {
 
   if (!session || !mode) {
     return (
-      <EntryPanel
-        session={session}
-        loadState={loadState}
-        errorMessage={errorMessage}
-        selectedMode={mode}
-        draftDisplayName={draftDisplayName}
-        onDraftDisplayNameChange={setDraftDisplayName}
-        onGuestEntry={handleGuestEntry}
-        onRenameGuest={handleRenameGuest}
-        onLogout={handleLogout}
-        onSelectMode={selectMode}
-      />
+      <>
+        <EntryPanel
+          session={session}
+          loadState={loadState}
+          errorMessage={errorMessage}
+          selectedMode={mode}
+          draftDisplayName={draftDisplayName}
+          onDraftDisplayNameChange={setDraftDisplayName}
+          onGuestEntry={handleGuestEntry}
+          onOAuthEntry={handleOAuthEntry}
+          onRenameGuest={handleRenameGuest}
+          onLogout={handleLogout}
+          onSelectMode={selectMode}
+        />
+        {session ? <HistoryContainer session={session} /> : null}
+      </>
     );
   }
 

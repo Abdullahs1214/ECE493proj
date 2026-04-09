@@ -14,6 +14,9 @@ interface ResultsContainerProps {
   round: GameplayRound;
   results: GameplayResult[];
   mode: GameMode;
+  currentRoundNumber: number;
+  totalRounds: number;
+  canAdvance: boolean;
   onBackToMenu?: () => void;
 }
 
@@ -22,6 +25,9 @@ export default function ResultsContainer({
   round,
   results,
   mode,
+  currentRoundNumber,
+  totalRounds,
+  canAdvance,
   onBackToMenu,
 }: ResultsContainerProps) {
   const [social, setSocial] = useState<SocialInteractionState | undefined>(undefined);
@@ -42,10 +48,20 @@ export default function ResultsContainer({
 
       {mode === "single_player" ? (
         <section className="status-card">
+          {canAdvance ? (
+            <p>
+              Round {currentRoundNumber} of {totalRounds} complete. Next round starts
+              automatically in a moment.
+            </p>
+          ) : (
+            <p>Match complete.</p>
+          )}
           <div className="actions">
-            <button type="button" onClick={handlePlayAgain}>
-              Play another round
-            </button>
+            {!canAdvance ? (
+              <button type="button" onClick={handlePlayAgain}>
+                Play another match
+              </button>
+            ) : null}
             <button type="button" onClick={onBackToMenu}>
               Back to menu
             </button>
@@ -53,6 +69,17 @@ export default function ResultsContainer({
         </section>
       ) : (
         <>
+          {canAdvance ? (
+            <section className="status-card">
+              <p>
+                Round {currentRoundNumber} of {totalRounds} complete. Next round starts shortly.
+              </p>
+            </section>
+          ) : (
+            <section className="status-card">
+              <p>Multiplayer match complete. The room is open for the next game.</p>
+            </section>
+          )}
           <SocialPanelContainer matchId={matchId} onStateChange={setSocial} />
           {onBackToMenu ? (
             <section className="status-card">

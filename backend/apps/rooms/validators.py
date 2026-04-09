@@ -3,7 +3,7 @@ from apps.rooms.models import Room
 
 
 def validate_room_is_joinable(room: Room) -> None:
-    if room.room_status != Room.RoomStatus.OPEN:
+    if room.room_status == Room.RoomStatus.CLOSED:
         raise ValueError("Room is not open for joining.")
 
 

@@ -19,6 +19,7 @@ export default function LobbyContainer({
 }: LobbyContainerProps) {
   const {
     room,
+    availableRooms,
     activeMatchId,
     errorMessage,
     setErrorMessage,
@@ -26,6 +27,7 @@ export default function LobbyContainer({
     createRoom,
     joinRoom,
     leaveRoom,
+    deleteRoom,
   } = useRoomState();
   const [roomIdInput, setRoomIdInput] = useState("");
 
@@ -62,11 +64,23 @@ export default function LobbyContainer({
     if (!room) {
       return;
     }
+    if (room.members.filter((member) => member.membershipStatus === "active").length < 2) {
+      setErrorMessage("At least two active players are required to start gameplay.");
+      return;
+    }
     try {
       const gameplay = await startGameplay("multiplayer", room.roomId);
       setActiveMatchId(gameplay.matchId);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to start gameplay.");
+    }
+  }
+
+  async function handleDeleteRoom() {
+    try {
+      await deleteRoom();
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to delete room.");
     }
   }
 
@@ -97,12 +111,15 @@ export default function LobbyContainer({
       <LobbyPanel
         session={session}
         room={room}
+        availableRooms={availableRooms}
+        currentPlayerId={currentPlayerId}
         roomIdInput={roomIdInput}
         errorMessage={errorMessage}
         onRoomIdInputChange={setRoomIdInput}
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
         onLeaveRoom={handleLeaveRoom}
+        onDeleteRoom={handleDeleteRoom}
         onStartGameplay={handleStartGameplay}
       />
     </>

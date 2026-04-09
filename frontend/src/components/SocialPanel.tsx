@@ -35,7 +35,7 @@ export default function SocialPanel({
       </div>
       <h3>Submission Reactions</h3>
       <ul className="member-list">
-        {social.submissionSummaries.map((submission) => (
+        {social.submissionSummaries.length ? social.submissionSummaries.map((submission) => (
           <li key={submission.submissionId} className="social-submission-row">
             <span>
               {submission.displayName}: {submission.upvoteCount} upvotes,{" "}
@@ -58,17 +58,17 @@ export default function SocialPanel({
               </button>
             </span>
           </li>
-        ))}
+        )) : <li>No scored submissions available yet.</li>}
       </ul>
       <h3>Activity</h3>
       <ul className="member-list">
-        {social.interactions.map((interaction) => (
+        {social.interactions.length ? social.interactions.map((interaction) => (
           <li key={interaction.socialInteractionId}>
             {interaction.displayName} - {interaction.interactionType}
             {interaction.targetDisplayName ? ` for ${interaction.targetDisplayName}` : ""}
             {interaction.presetMessage ? ` - ${interaction.presetMessage}` : ""}
           </li>
-        ))}
+        )) : <li>No social activity yet.</li>}
       </ul>
     </section>
   );

@@ -2,7 +2,9 @@ export type IdentityType = "authenticated" | "guest";
 export type SessionType = "authenticated" | "guest";
 export type SessionStatus = "active" | "expired" | "logged_out";
 export type GameMode = "single_player" | "multiplayer";
-export type RoomStatus = "open" | "closed";
+export type RoomStatus = "open" | "active_match" | "closed";
+export type JoinPolicy = "open" | "locked_for_active_match";
+export type WaitingPolicy = "late_join_waiting_allowed";
 export type MembershipStatus = "active" | "disconnected" | "waiting_for_next_game";
 export type MatchStatus = "waiting_for_players" | "active_round" | "scoring" | "results" | "ended";
 export type RoundStatus = "active_blending" | "submission_closed" | "scoring" | "results";
@@ -43,6 +45,8 @@ export interface RoomMember {
 export interface Room {
   roomId: string;
   roomStatus: RoomStatus;
+  joinPolicy: JoinPolicy;
+  waitingPolicy: WaitingPolicy;
   hostPlayerId: string;
   hostDisplayName: string;
   members: RoomMember[];
@@ -82,6 +86,8 @@ export interface GameplayState {
   mode: GameMode;
   matchStatus: MatchStatus;
   currentRoundNumber: number;
+  totalRounds: number;
+  canAdvance: boolean;
   round: GameplayRound;
   submissions: GameplaySubmission[];
   results: GameplayResult[];
