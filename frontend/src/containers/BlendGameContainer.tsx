@@ -6,7 +6,7 @@ import type { GameMode } from "../types/game";
 import ResultsContainer from "./ResultsContainer";
 
 function defaultMixWeights(colorCount: number) {
-  return Array.from({ length: colorCount }, () => 100);
+  return Array.from({ length: colorCount }, () => 0);
 }
 
 function blendFromWeights(baseColorSet: number[][], mixWeights: number[]) {
@@ -36,6 +36,8 @@ interface BlendGameContainerProps {
   roomId?: string;
   initialMatchId?: string;
   currentPlayerId: string;
+  hostPlayerId?: string;
+  onBackToLobby?: () => void;
   onBackToMenu?: () => void;
 }
 
@@ -44,15 +46,17 @@ export default function BlendGameContainer({
   roomId,
   initialMatchId,
   currentPlayerId,
+  hostPlayerId,
+  onBackToLobby,
   onBackToMenu,
 }: BlendGameContainerProps) {
-  const { gameplay, errorMessage, isLoading, submitColor } = useGameplayState({
+  const { gameplay, setGameplay, errorMessage, isLoading, submitColor } = useGameplayState({
     mode,
     roomId,
     initialMatchId,
   });
 
-  const [mixWeights, setMixWeights] = useState<number[]>([100, 100, 100]);
+  const [mixWeights, setMixWeights] = useState<number[]>([]);
   const [hasLocallySubmitted, setHasLocallySubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -87,6 +91,10 @@ export default function BlendGameContainer({
         currentRoundNumber={gameplay.currentRoundNumber}
         totalRounds={gameplay.totalRounds}
         canAdvance={gameplay.canAdvance}
+        isHost={mode === "single_player" || currentPlayerId === hostPlayerId}
+        currentPlayerId={currentPlayerId}
+        onAdvance={(nextState) => setGameplay(nextState)}
+        onBackToLobby={onBackToLobby}
         onBackToMenu={onBackToMenu}
       />
     );
@@ -135,7 +143,7 @@ export default function BlendGameContainer({
         {hasSubmitted ? (
           <p>✅ Your submission has been received.</p>
         ) : (
-          <p>Adjust the sliders to match the target color as closely as possible.</p>
+          <p>Blend your colors to match the target as closely as possible.</p>
         )}
 
         <div style={{ marginTop: "12px" }}>

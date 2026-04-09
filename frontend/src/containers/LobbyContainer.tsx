@@ -30,6 +30,7 @@ export default function LobbyContainer({
     deleteRoom,
   } = useRoomState();
   const [roomIdInput, setRoomIdInput] = useState("");
+  const [isStarting, setIsStarting] = useState(false);
 
   async function handleCreateRoom() {
     try {
@@ -61,18 +62,21 @@ export default function LobbyContainer({
   }
 
   async function handleStartGameplay() {
-    if (!room) {
+    if (!room || isStarting) {
       return;
     }
     if (room.members.filter((member) => member.membershipStatus === "active").length < 2) {
       setErrorMessage("At least two active players are required to start gameplay.");
       return;
     }
+    setIsStarting(true);
     try {
       const gameplay = await startGameplay("multiplayer", room.roomId);
       setActiveMatchId(gameplay.matchId);
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : "Unable to start gameplay.");
+    } finally {
+      setIsStarting(false);
     }
   }
 
@@ -91,6 +95,8 @@ export default function LobbyContainer({
         roomId={room.roomId}
         initialMatchId={activeMatchId}
         currentPlayerId={currentPlayerId}
+        hostPlayerId={room.hostPlayerId}
+        onBackToLobby={() => setActiveMatchId(null)}
         onBackToMenu={onBackToMenu}
       />
     );
@@ -118,9 +124,17 @@ export default function LobbyContainer({
         onRoomIdInputChange={setRoomIdInput}
         onCreateRoom={handleCreateRoom}
         onJoinRoom={handleJoinRoom}
+        onJoinRoomById={async (id) => {
+          try {
+            await joinRoom(id);
+          } catch (error) {
+            setErrorMessage(error instanceof Error ? error.message : "Unable to join room.");
+          }
+        }}
         onLeaveRoom={handleLeaveRoom}
         onDeleteRoom={handleDeleteRoom}
         onStartGameplay={handleStartGameplay}
+        isStarting={isStarting}
       />
     </>
   );

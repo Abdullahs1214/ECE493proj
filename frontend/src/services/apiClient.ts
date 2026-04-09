@@ -120,12 +120,17 @@ export async function getCurrentSession(): Promise<Session | null> {
   return payload.session ?? null;
 }
 
-export async function updateCurrentSession(displayName: string): Promise<Session> {
+export async function updateCurrentSession(
+  displayName?: string,
+  profileAvatar?: string,
+): Promise<Session> {
+  const body: Record<string, string> = {};
+  if (displayName) body.displayName = displayName;
+  if (profileAvatar !== undefined) body.profileAvatar = profileAvatar;
   const payload = await request<{ session: Session }>("/sessions/current/update/", {
     method: "PATCH",
-    body: JSON.stringify({ displayName }),
+    body: JSON.stringify(body),
   });
-
   return payload.session;
 }
 
@@ -212,6 +217,14 @@ export async function submitGameplayColor(matchId: string, mixWeights: number[])
   const payload = await request<{ gameplay: GameplayState }>("/gameplay/submit/", {
     method: "POST",
     body: JSON.stringify({ matchId, mixWeights }),
+  });
+  return payload.gameplay;
+}
+
+export async function advanceRound(matchId: string): Promise<GameplayState> {
+  const payload = await request<{ gameplay: GameplayState }>("/gameplay/advance/", {
+    method: "POST",
+    body: JSON.stringify({ matchId }),
   });
   return payload.gameplay;
 }

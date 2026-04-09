@@ -25,9 +25,6 @@ export function useRoomState() {
     ]).then(([currentRoom, rooms]) => {
       setRoom(currentRoom);
       setAvailableRooms(rooms);
-      if (!currentRoom || currentRoom.roomStatus !== "active_match") {
-        setActiveMatchId(null);
-      }
     });
   }
 
@@ -55,9 +52,6 @@ export function useRoomState() {
           if (message.roomClosed || !message.room) {
             setActiveMatchId(null);
             return;
-          }
-          if (message.room.roomStatus !== "active_match") {
-            setActiveMatchId(null);
           }
         }
         if (message.event === "match_start_update" && message.matchId) {

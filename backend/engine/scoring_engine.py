@@ -12,7 +12,16 @@ def generate_target_color() -> list[int]:
 
 
 def generate_base_color_set() -> list[list[int]]:
-    return [[255, 0, 0], [0, 255, 0], [0, 0, 255]]
+    return [
+        [255, 255, 255],  # White
+        [0, 0, 0],        # Black
+        [255, 0, 0],      # Red
+        [0, 255, 0],      # Green
+        [0, 0, 255],      # Blue
+        [0, 255, 255],    # Cyan
+        [255, 0, 255],    # Magenta
+        [255, 255, 0],    # Yellow
+    ]
 
 
 def color_distance(target_color: list[int], blended_color: list[int]) -> float:

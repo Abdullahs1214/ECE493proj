@@ -114,6 +114,13 @@ def update_guest_display_name(session: Session, display_name: str) -> Session:
     return session
 
 
+def update_player_avatar(session: Session, profile_avatar: str) -> Session:
+    session.player.profile_avatar = profile_avatar.strip()
+    session.player.save(update_fields=["profile_avatar"])
+    session.refresh_from_db()
+    return session
+
+
 def logout_session(session: Session) -> Session:
     session.status = Session.Status.LOGGED_OUT
     session.save(update_fields=["status", "last_activity_at"])

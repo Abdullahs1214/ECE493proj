@@ -119,6 +119,7 @@ export function useGameplayState({ mode, roomId, initialMatchId }: UseGameplaySt
 
   return {
     gameplay,
+    setGameplay,
     errorMessage,
     isLoading,
     realtimeReady,

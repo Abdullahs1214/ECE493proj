@@ -8,7 +8,7 @@ from api.exceptions import APIError, require_active_session, translate_api_error
 from api.schemas import gameplay_response
 from api.views.session_views import SESSION_KEY
 from services.identity_service import get_active_session
-from services.match_service import get_match_state, serialize_match_state, submit_color
+from services.match_service import advance_round, get_match_state, serialize_match_state, submit_color
 from services.mode_service import start_gameplay_for_mode
 
 
@@ -74,6 +74,24 @@ def submit_color_view(request):
             blended_color if isinstance(blended_color, list) else None,
             mix_weights if isinstance(mix_weights, list) else None,
         )
+    except Exception as exc:
+        return translate_api_error(exc)
+
+    return JsonResponse(gameplay_response(serialize_match_state(match)))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def advance_round_view(request):
+    try:
+        player = _get_active_player(request)
+        if player is None:
+            raise APIError("No active session.", status=401)
+        payload = _load_request_data(request)
+        match_id = str(payload.get("matchId", "")).strip()
+        if not match_id:
+            raise APIError("matchId is required.")
+        match = advance_round(player, match_id)
     except Exception as exc:
         return translate_api_error(exc)
 

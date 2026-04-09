@@ -23,7 +23,7 @@ from websockets.submission_publisher import (
 )
 
 DEFAULT_MATCH_ROUNDS = getattr(settings, "DEFAULT_MATCH_ROUNDS", 3)
-RESULTS_VIEW_SECONDS = 5
+RESULTS_VIEW_SECONDS = 300  # fallback auto-advance; players use the explicit advance endpoint
 
 
 def _match_players(match: Match) -> list[PlayerIdentity]:
@@ -284,6 +284,37 @@ def submit_color(
     if match.match_status in [Match.MatchStatus.RESULTS, Match.MatchStatus.ENDED]:
         publish_scoring_update(match)
         publish_result_publication(match)
+    return match
+
+
+@transaction.atomic
+def advance_round(player: PlayerIdentity, match_id: str) -> Match:
+    match = Match.objects.select_related("room").filter(match_id=match_id).first()
+    if match is None:
+        raise ValueError("Match was not found.")
+    if match.match_status != Match.MatchStatus.RESULTS:
+        raise ValueError("Match is not in the results phase.")
+    if _is_final_round(match):
+        raise ValueError("Match has no more rounds to advance to.")
+
+    if match.mode == Match.Mode.MULTIPLAYER:
+        membership = RoomMembership.objects.filter(
+            room=match.room,
+            player=player,
+            membership_status=RoomMembership.MembershipStatus.ACTIVE,
+        ).first()
+        if membership is None:
+            raise ValueError("Player is not active in the room for this match.")
+
+    from websockets.match_publisher import publish_round_start
+
+    match.current_round_number += 1
+    match.match_status = Match.MatchStatus.ACTIVE_ROUND
+    match.save(update_fields=["current_round_number", "match_status"])
+    create_round_for_match(match)
+    _sync_room_after_match_state(match)
+    publish_round_start(match)
+    match.refresh_from_db()
     return match
 
 

@@ -137,11 +137,13 @@ def finalize_round_if_ready(match: Match) -> None:
 
     round_instance.round_status = Round.RoundStatus.RESULTS
     round_instance.save(update_fields=["round_status"])
-    match.match_status = Match.MatchStatus.RESULTS
+
     if match.current_round_number >= DEFAULT_MATCH_ROUNDS:
+        match.match_status = Match.MatchStatus.ENDED
         match.ended_at = timezone.now()
         match.save(update_fields=["match_status", "ended_at"])
         return
 
+    match.match_status = Match.MatchStatus.RESULTS
     match.ended_at = None
     match.save(update_fields=["match_status", "ended_at"])

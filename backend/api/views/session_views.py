@@ -9,9 +9,10 @@ from api.schemas import error_response, session_response
 from services.identity_service import (
     create_guest_session,
     get_active_session,
+    logout_session,
     serialize_session,
     update_guest_display_name,
-    logout_session,
+    update_player_avatar,
 )
 
 
@@ -63,13 +64,23 @@ def update_session_view(request):
         )
         payload = _load_request_data(request)
         display_name = str(payload.get("displayName", "")).strip()
-        if not display_name:
-            raise APIError("displayName is required.")
-        updated_session = update_guest_display_name(session, display_name)
+        profile_avatar = str(payload.get("profileAvatar", "UNSET")).strip()
+
+        if display_name:
+            if session.session_type != "guest":
+                raise APIError("Display name can only be changed for guest sessions.")
+            session = update_guest_display_name(session, display_name)
+
+        if profile_avatar != "UNSET":
+            session = update_player_avatar(session, profile_avatar)
+
+        if not display_name and profile_avatar == "UNSET":
+            raise APIError("displayName or profileAvatar is required.")
+
     except Exception as exc:
         return translate_api_error(exc)
 
-    return JsonResponse(session_response(serialize_session(updated_session)))
+    return JsonResponse(session_response(serialize_session(session)))
 
 
 @csrf_exempt

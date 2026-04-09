@@ -118,32 +118,28 @@ def _build_submission_summaries(
     ]
 
 
-def _build_crowd_favorite(submission_summaries: list[dict[str, Any]]) -> dict[str, Any] | None:
-    ranked = sorted(
-        submission_summaries,
-        key=lambda summary: (
-            -(summary["upvoteCount"] + summary["highlightCount"]),
-            -summary["upvoteCount"],
-            -summary["highlightCount"],
-            summary["displayName"],
-        ),
+def _build_crowd_favorites(submission_summaries: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if not submission_summaries:
+        return []
+
+    max_reactions = max(
+        s["upvoteCount"] + s["highlightCount"] for s in submission_summaries
     )
-    if not ranked:
-        return None
+    if max_reactions == 0:
+        return []
 
-    favorite = ranked[0]
-    reaction_count = favorite["upvoteCount"] + favorite["highlightCount"]
-    if reaction_count == 0:
-        return None
-
-    return {
-        "submissionId": favorite["submissionId"],
-        "playerId": favorite["playerId"],
-        "displayName": favorite["displayName"],
-        "reactionCount": reaction_count,
-        "upvoteCount": favorite["upvoteCount"],
-        "highlightCount": favorite["highlightCount"],
-    }
+    return [
+        {
+            "submissionId": s["submissionId"],
+            "playerId": s["playerId"],
+            "displayName": s["displayName"],
+            "reactionCount": max_reactions,
+            "upvoteCount": s["upvoteCount"],
+            "highlightCount": s["highlightCount"],
+        }
+        for s in submission_summaries
+        if s["upvoteCount"] + s["highlightCount"] == max_reactions
+    ]
 
 
 def submit_social_interaction(
@@ -169,6 +165,8 @@ def submit_social_interaction(
         ).first()
         if submission is None:
             raise ValueError("Target submission was not found.")
+        if submission.player_id == player.player_id:
+            raise ValueError("You cannot react to your own submission.")
     elif interaction_type == SocialInteraction.InteractionType.PRESET_MESSAGE:
         if not preset_message or preset_message not in PRESET_MESSAGES:
             raise ValueError("Unsupported preset message.")
@@ -211,5 +209,5 @@ def get_social_state(player: PlayerIdentity, match_id: str) -> dict[str, Any]:
         "presetMessages": list(PRESET_MESSAGES),
         "interactions": [_serialize_interaction(interaction) for interaction in interactions],
         "submissionSummaries": submission_summaries,
-        "crowdFavorite": _build_crowd_favorite(submission_summaries),
+        "crowdFavorites": _build_crowd_favorites(submission_summaries),
     }

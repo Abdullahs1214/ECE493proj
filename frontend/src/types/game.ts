@@ -125,18 +125,20 @@ export interface SocialSubmissionSummary {
   hasHighlighted: boolean;
 }
 
+export interface CrowdFavoriteEntry {
+  submissionId: string;
+  playerId: string;
+  displayName: string;
+  reactionCount: number;
+  upvoteCount: number;
+  highlightCount: number;
+}
+
 export interface SocialInteractionState {
   presetMessages: string[];
   interactions: SocialInteractionEntry[];
   submissionSummaries: SocialSubmissionSummary[];
-  crowdFavorite: {
-    submissionId: string;
-    playerId: string;
-    displayName: string;
-    reactionCount: number;
-    upvoteCount: number;
-    highlightCount: number;
-  } | null;
+  crowdFavorites: CrowdFavoriteEntry[];
 }
 
 export interface RealtimeRoomMessage {

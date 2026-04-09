@@ -105,6 +105,16 @@ export function useSessionState() {
     }
   }
 
+  async function updateAvatar(profileAvatar: string) {
+    setErrorMessage(null);
+    try {
+      const nextSession = await updateCurrentSession(undefined, profileAvatar);
+      setSession(nextSession);
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to update avatar.");
+    }
+  }
+
   async function clearSession() {
     setErrorMessage(null);
     try {
@@ -122,6 +132,7 @@ export function useSessionState() {
     enterAsGuest,
     enterWithOAuth,
     renameGuest,
+    updateAvatar,
     clearSession,
   };
 }

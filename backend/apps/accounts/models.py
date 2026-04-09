@@ -11,7 +11,7 @@ class PlayerIdentity(models.Model):
     player_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     identity_type = models.CharField(max_length=32, choices=IdentityType.choices)
     display_name = models.CharField(max_length=64)
-    profile_avatar = models.URLField(blank=True)
+    profile_avatar = models.TextField(blank=True)
     oauth_identity = models.CharField(max_length=255, blank=True, null=True, unique=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

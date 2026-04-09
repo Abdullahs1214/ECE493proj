@@ -8,10 +8,11 @@ import { useModeSelection } from "../hooks/useModeSelection";
 import { useSessionState } from "../hooks/useSessionState";
 
 export default function EntryContainer() {
-  const { session, loadState, errorMessage, enterAsGuest, enterWithOAuth, renameGuest, clearSession } =
+  const { session, loadState, errorMessage, enterAsGuest, enterWithOAuth, renameGuest, updateAvatar, clearSession } =
     useSessionState();
   const { mode, selectMode, resetMode } = useModeSelection();
   const [draftDisplayName, setDraftDisplayName] = useState("");
+  const [draftAvatarUrl, setDraftAvatarUrl] = useState("");
 
   useEffect(() => {
     function handleRestart() {
@@ -40,6 +41,16 @@ export default function EntryContainer() {
       return;
     }
     await renameGuest(draftDisplayName);
+    setDraftDisplayName("");
+  }
+
+  async function handleUpdateAvatar() {
+    await updateAvatar(draftAvatarUrl.trim());
+    setDraftAvatarUrl("");
+  }
+
+  async function handleClearAvatar() {
+    await updateAvatar("");
   }
 
   async function handleLogout() {
@@ -60,10 +71,14 @@ export default function EntryContainer() {
           errorMessage={errorMessage}
           selectedMode={mode}
           draftDisplayName={draftDisplayName}
+          draftAvatarUrl={draftAvatarUrl}
           onDraftDisplayNameChange={setDraftDisplayName}
+          onDraftAvatarUrlChange={setDraftAvatarUrl}
           onGuestEntry={handleGuestEntry}
           onOAuthEntry={handleOAuthEntry}
           onRenameGuest={handleRenameGuest}
+          onUpdateAvatar={handleUpdateAvatar}
+          onClearAvatar={handleClearAvatar}
           onLogout={handleLogout}
           onSelectMode={selectMode}
         />
