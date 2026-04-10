@@ -50,6 +50,26 @@ export async function getHealth(): Promise<{ status: string }> {
   return response.json();
 }
 
+export async function registerLocalAccount(
+  username: string,
+  password: string,
+  displayName: string,
+): Promise<Session> {
+  const payload = await request<{ session: Session }>("/sessions/register/", {
+    method: "POST",
+    body: JSON.stringify({ username, password, displayName }),
+  });
+  return payload.session;
+}
+
+export async function loginLocalAccount(username: string, password: string): Promise<Session> {
+  const payload = await request<{ session: Session }>("/sessions/login/", {
+    method: "POST",
+    body: JSON.stringify({ username, password }),
+  });
+  return payload.session;
+}
+
 export async function createGuestSession(displayName?: string): Promise<Session> {
   const payload = await request<{ session: Session }>("/sessions/guest/", {
     method: "POST",

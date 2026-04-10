@@ -52,8 +52,13 @@ def build_score_records(round_instance: Round) -> None:
     )
 
     round_instance.score_records.all().delete()
-    for index, submission in enumerate(ranked, start=1):
+    rank = 1
+    for index, submission in enumerate(ranked):
         distance = color_distance(round_instance.target_color, submission.blended_color)
+        if index > 0:
+            prev_distance = color_distance(round_instance.target_color, ranked[index - 1].blended_color)
+            if distance != prev_distance:
+                rank = index + 1
         similarity = similarity_percentage(distance)
         ScoreRecord.objects.create(
             round=round_instance,
@@ -61,6 +66,6 @@ def build_score_records(round_instance: Round) -> None:
             color_distance=distance,
             score=score_value(similarity),
             similarity_percentage=similarity,
-            rank=index,
+            rank=rank,
             tie_break_basis=TIE_BREAK_BASIS,
         )

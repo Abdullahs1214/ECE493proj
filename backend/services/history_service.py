@@ -30,6 +30,8 @@ def record_score_history(score_record) -> None:
 
 
 def _serialize_history_entry(entry: ScoreHistoryEntry) -> dict[str, Any]:
+    from apps.gameplay.models import Submission
+    submission = Submission.objects.filter(round=entry.round, player=entry.player).first()
     return {
         "scoreHistoryEntryId": str(entry.score_history_entry_id),
         "historyScope": entry.history_scope,
@@ -40,12 +42,16 @@ def _serialize_history_entry(entry: ScoreHistoryEntry) -> dict[str, Any]:
         "score": entry.score_record.score,
         "similarityPercentage": entry.score_record.similarity_percentage,
         "rank": entry.score_record.rank,
+        "targetColor": entry.round.target_color,
+        "blendedColor": submission.blended_color if submission else None,
+        "roundNumber": entry.round.round_number,
+        "matchMode": entry.round.match.mode,
     }
 
 
 def get_history_for_player(player: PlayerIdentity) -> dict[str, list[dict[str, Any]]]:
     room_entries = (
-        ScoreHistoryEntry.objects.select_related("score_record", "player")
+        ScoreHistoryEntry.objects.select_related("score_record", "player", "round__match")
         .filter(
             player=player,
             history_scope=ScoreHistoryEntry.HistoryScope.ROOM_SCOPED,
@@ -53,7 +59,7 @@ def get_history_for_player(player: PlayerIdentity) -> dict[str, list[dict[str, A
         .order_by("-created_at")
     )
     identity_entries = (
-        ScoreHistoryEntry.objects.select_related("score_record", "player")
+        ScoreHistoryEntry.objects.select_related("score_record", "player", "round__match")
         .filter(player=player, history_scope=ScoreHistoryEntry.HistoryScope.IDENTITY_SCOPED)
         .order_by("-created_at")
     )

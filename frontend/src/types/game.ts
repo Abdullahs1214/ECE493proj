@@ -81,6 +81,13 @@ export interface GameplayResult {
   tieBreakBasis: string;
 }
 
+export interface MatchLeaderboardEntry {
+  playerId: string;
+  displayName: string;
+  totalScore: number;
+  rank: number;
+}
+
 export interface GameplayState {
   matchId: string;
   mode: GameMode;
@@ -91,6 +98,7 @@ export interface GameplayState {
   round: GameplayRound;
   submissions: GameplaySubmission[];
   results: GameplayResult[];
+  matchLeaderboard: MatchLeaderboardEntry[] | null;
 }
 
 export interface HistoryEntry {
@@ -103,6 +111,10 @@ export interface HistoryEntry {
   score: number;
   similarityPercentage: number;
   rank: number;
+  targetColor: [number, number, number] | null;
+  blendedColor: [number, number, number] | null;
+  roundNumber: number;
+  matchMode: "single_player" | "multiplayer";
 }
 
 export interface SocialInteractionEntry {

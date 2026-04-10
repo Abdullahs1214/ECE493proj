@@ -23,6 +23,10 @@ test("renders room-scoped and identity-scoped history", async () => {
               score: 900,
               similarityPercentage: 90,
               rank: 1,
+              targetColor: null,
+              blendedColor: null,
+              roundNumber: 1,
+              matchMode: "single_player",
             },
           ],
           identityScopedHistory: [],
@@ -37,7 +41,7 @@ test("renders room-scoped and identity-scoped history", async () => {
     expect(screen.getByText("Score History")).toBeInTheDocument();
   });
 
-  expect(screen.getByText(/Player One - 900 points - rank 1/)).toBeInTheDocument();
+  expect(screen.getByText(/900 pts/)).toBeInTheDocument();
 
   vi.unstubAllGlobals();
 });

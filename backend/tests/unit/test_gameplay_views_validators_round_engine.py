@@ -152,7 +152,7 @@ def test_submit_color_view_requires_blended_color_list() -> None:
         response = gameplay_views.submit_color_view(request)
 
     assert response.status_code == 400
-    assert _json(response) == {"error": "blendedColor is required."}
+    assert _json(response) == {"error": "mixWeights is required."}
 
 
 @pytest.mark.django_db

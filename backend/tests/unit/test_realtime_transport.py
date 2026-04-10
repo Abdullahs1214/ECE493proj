@@ -277,7 +277,10 @@ def test_forward_timer_updates_stops_when_match_is_no_longer_active() -> None:
     async def run_test():
         with (
             patch("websockets.room_consumer.asyncio.sleep", new=AsyncMock(return_value=None)),
-            patch("services.match_service.get_match_state", return_value=SimpleNamespace()),
+            patch(
+                "services.match_service.get_match_state",
+                side_effect=[SimpleNamespace(), ValueError("done")],
+            ),
             patch(
                 "services.match_service.serialize_match_state",
                 return_value={"matchId": "match-1", "matchStatus": "results"},
@@ -295,7 +298,9 @@ def test_handle_room_socket_closes_when_membership_is_missing() -> None:
     messages: list[dict] = []
     fake_manager = SimpleNamespace(
         select_related=lambda *args, **kwargs: SimpleNamespace(
-            filter=lambda **filter_kwargs: SimpleNamespace(first=lambda: None)
+            filter=lambda **filter_kwargs: SimpleNamespace(
+                exclude=lambda **ekwargs: SimpleNamespace(first=lambda: None)
+            )
         )
     )
 
@@ -320,8 +325,9 @@ def test_handle_room_socket_closes_when_membership_is_missing() -> None:
 def test_handle_room_socket_sends_match_start_when_room_has_active_match() -> None:
     player = SimpleNamespace(player_id="player-1")
     match = SimpleNamespace(match_id="match-1")
+    room_id = "00000000-0000-0000-0000-000000000001"
     room = SimpleNamespace(
-        room_id="room-1",
+        room_id=room_id,
         matches=SimpleNamespace(
             exclude=lambda **kwargs: SimpleNamespace(
                 order_by=lambda *args, **inner_kwargs: SimpleNamespace(first=lambda: match)
@@ -331,7 +337,9 @@ def test_handle_room_socket_sends_match_start_when_room_has_active_match() -> No
     membership = SimpleNamespace(room=room)
     fake_manager = SimpleNamespace(
         select_related=lambda *args, **kwargs: SimpleNamespace(
-            filter=lambda **filter_kwargs: SimpleNamespace(first=lambda: membership)
+            filter=lambda **filter_kwargs: SimpleNamespace(
+                exclude=lambda **ekwargs: SimpleNamespace(first=lambda: membership)
+            )
         )
     )
     messages: list[dict] = []
@@ -340,17 +348,15 @@ def test_handle_room_socket_sends_match_start_when_room_has_active_match() -> No
         with (
             patch("websockets.room_consumer.sync_to_async", side_effect=_immediate_sync_to_async),
             patch("websockets.room_consumer.RoomMembership.objects", fake_manager),
-            patch(
-                "services.room_service.serialize_room",
-                return_value={"roomId": str(room.room_id), "members": []},
-            ),
+            patch("services.room_service.serialize_room", return_value={"roomId": room_id, "members": []}),
+            patch("services.room_service.mark_player_disconnected"),
         ):
             await _handle_room_socket(
-                {"path": f"/ws/rooms/{room.room_id}/"},
+                {"path": f"/ws/rooms/{room_id}/"},
                 _disconnect_receive(),
                 _send_collector(messages),
                 player,
-                str(room.room_id),
+                room_id,
             )
 
     asyncio.run(run_test())

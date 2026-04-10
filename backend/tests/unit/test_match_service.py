@@ -297,9 +297,9 @@ def test_submit_color_allows_active_multiplayer_member(
         round_status=Round.RoundStatus.ACTIVE_BLENDING,
     )
 
-    submit_color(guest, str(match.match_id), [10, 20, 30])
+    submit_color(guest, str(match.match_id), blended_color=[10, 20, 30])
 
-    mock_register_submission.assert_called_once_with(round_instance, guest, [10, 20, 30])
+    mock_register_submission.assert_called_once_with(round_instance, guest, blended_color=[10, 20, 30], mix_weights=None)
     mock_finalize_round_if_ready.assert_called_once_with(match)
     mock_record_history_for_match.assert_called_once_with(match)
     mock_publish_submission_receipt.assert_called_once_with(match)

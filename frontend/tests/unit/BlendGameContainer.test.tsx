@@ -83,7 +83,7 @@ test("starts gameplay and submits a blended color", async () => {
     });
   vi.stubGlobal("fetch", fetchMock);
 
-  render(<BlendGameContainer mode="single_player" />);
+  render(<BlendGameContainer mode="single_player" currentPlayerId="player-1" />);
 
   await waitFor(() => {
     expect(screen.getByText("Blend Your Color")).toBeInTheDocument();

@@ -18,6 +18,9 @@ test("renders the entry screen", async () => {
   await waitFor(() => {
     expect(screen.getByText("Welcome")).toBeInTheDocument();
   });
+  // Default tab is "login"; switch to guest tab to see "Continue as guest"
+  const { fireEvent } = await import("@testing-library/react");
+  fireEvent.click(screen.getByRole("button", { name: "Guest" }));
   expect(screen.getByText("Continue as guest")).toBeInTheDocument();
 
   vi.unstubAllGlobals();

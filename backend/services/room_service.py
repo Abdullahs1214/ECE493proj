@@ -229,5 +229,22 @@ def mark_player_disconnected(player: PlayerIdentity, room_id: str) -> None:
     membership.membership_status = RoomMembership.MembershipStatus.DISCONNECTED
     membership.save(update_fields=["membership_status"])
     room.refresh_from_db()
+
+    # Auto-close the room if no active members remain and no match is in progress
+    active_remaining = room.memberships.filter(
+        membership_status=RoomMembership.MembershipStatus.ACTIVE
+    ).count()
+    has_active_match = room.matches.exclude(
+        match_status__in=["ended"]
+    ).exists()
+    if active_remaining == 0 and not has_active_match:
+        room.room_status = Room.RoomStatus.CLOSED
+        room.join_policy = Room.JoinPolicy.LOCKED_FOR_ACTIVE_MATCH
+        room.save(update_fields=["room_status", "join_policy"])
+        _cleanup_guest_room_history(room)
+        publish_room_closed(room)
+        room.memberships.all().delete()
+        return
+
     _sync_active_match_after_membership_change(room)
     publish_room_state(room)

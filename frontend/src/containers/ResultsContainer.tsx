@@ -7,6 +7,7 @@ import type {
   GameplayResult,
   GameplayRound,
   GameplayState,
+  MatchLeaderboardEntry,
   SocialInteractionState,
 } from "../types/game";
 import SocialPanelContainer from "./SocialPanelContainer";
@@ -15,6 +16,7 @@ interface ResultsContainerProps {
   matchId: string;
   round: GameplayRound;
   results: GameplayResult[];
+  matchLeaderboard: MatchLeaderboardEntry[] | null;
   mode: GameMode;
   currentRoundNumber: number;
   totalRounds: number;
@@ -30,6 +32,7 @@ export default function ResultsContainer({
   matchId,
   round,
   results,
+  matchLeaderboard,
   mode,
   currentRoundNumber,
   totalRounds,
@@ -66,6 +69,29 @@ export default function ResultsContainer({
   return (
     <>
       <ResultsPanel round={round} results={results} social={social} />
+
+      {/* Match-wide leaderboard — shown when the full match is over */}
+      {matchLeaderboard && matchLeaderboard.length > 0 ? (
+        <section className="status-card">
+          <p className="eyebrow">Match Over</p>
+          <h2>
+            {matchLeaderboard[0].rank === 1
+              ? `Overall Winner: ${matchLeaderboard.filter((e) => e.rank === 1).map((e) => e.displayName).join(" & ")}`
+              : "Match Results"}
+          </h2>
+          <ul className="member-list">
+            {matchLeaderboard.map((entry) => (
+              <li key={entry.playerId} className={entry.rank === 1 ? "result-row result-row--winner" : "result-row"}>
+                <p style={{ fontWeight: entry.rank === 1 ? 700 : 400 }}>
+                  #{entry.rank} {entry.displayName}
+                  {entry.rank === 1 ? " — Winner" : ""}
+                </p>
+                <p>{entry.totalScore} pts total across {totalRounds} rounds</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
 
       {mode === "single_player" ? (
         <section className="status-card">

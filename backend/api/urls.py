@@ -16,7 +16,9 @@ from api.views.social_views import social_state_view, submit_social_view
 from api.views.session_views import (
     current_session_view,
     guest_entry_view,
+    login_local_view,
     logout_view,
+    register_local_view,
     update_session_view,
 )
 
@@ -25,6 +27,8 @@ urlpatterns = [
     path("health/", health_view, name="health"),
     path("auth/oauth/start/", oauth_start_view, name="oauth-start"),
     path("auth/oauth/complete/", oauth_complete_view, name="oauth-complete"),
+    path("sessions/register/", register_local_view, name="register-local"),
+    path("sessions/login/", login_local_view, name="login-local"),
     path("sessions/guest/", guest_entry_view, name="guest-entry"),
     path("sessions/current/", current_session_view, name="current-session"),
     path("sessions/current/update/", update_session_view, name="update-session"),

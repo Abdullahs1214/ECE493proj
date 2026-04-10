@@ -145,51 +145,90 @@ def test_history_retrieval_returns_room_and_identity_scopes() -> None:
 
 @pytest.mark.django_db
 def test_social_submission_and_retrieval_flow() -> None:
-    client = Client()
-    client.post(
+    # Two-player multiplayer so Player B can upvote Player A's submission.
+    host_client = Client()
+    guest_client = Client()
+
+    host_client.post(
         "/sessions/guest/",
-        data='{"displayName":"Social Player"}',
+        data='{"displayName":"Social Host"}',
         content_type="application/json",
     )
-    start_response = client.post(
+    guest_client.post(
+        "/sessions/guest/",
+        data='{"displayName":"Social Guest"}',
+        content_type="application/json",
+    )
+
+    # Host creates room, guest joins
+    room_response = host_client.post("/rooms/create/", content_type="application/json")
+    assert room_response.status_code == 201
+    room_id = room_response.json()["room"]["roomId"]
+
+    join_response = guest_client.post(
+        "/rooms/join/",
+        data=f'{{"roomId":"{room_id}"}}',
+        content_type="application/json",
+    )
+    assert join_response.status_code == 200
+
+    # Host starts match
+    start_response = host_client.post(
         "/gameplay/start/",
-        data='{"mode":"single_player"}',
+        data=f'{{"mode":"multiplayer","roomId":"{room_id}"}}',
         content_type="application/json",
     )
+    assert start_response.status_code == 201
     match_id = start_response.json()["gameplay"]["matchId"]
-    submit_response = client.post(
+
+    # Both players submit
+    host_client.post(
         "/gameplay/submit/",
         data=f'{{"matchId":"{match_id}","blendedColor":[10,20,30]}}',
         content_type="application/json",
     )
+    guest_client.post(
+        "/gameplay/submit/",
+        data=f'{{"matchId":"{match_id}","blendedColor":[50,60,70]}}',
+        content_type="application/json",
+    )
 
-    state_response = client.get(f"/social/state/?matchId={match_id}")
+    # Guest fetches social state to find Host's submission ID
+    state_response = guest_client.get(f"/social/state/?matchId={match_id}")
     assert state_response.status_code == 200
-    submission_id = state_response.json()["social"]["submissionSummaries"][0]["submissionId"]
+    summaries = state_response.json()["social"]["submissionSummaries"]
+    # Find Host's submission (not Guest's own)
+    host_submission_id = next(
+        s["submissionId"] for s in summaries if s["displayName"] == "Social Host"
+    )
 
-    social_submit_response = client.post(
+    # Guest upvotes Host's submission
+    social_submit_response = guest_client.post(
         "/social/submit/",
         data=(
             f'{{"matchId":"{match_id}","interactionType":"upvote",'
-            f'"targetSubmissionId":"{submission_id}"}}'
+            f'"targetSubmissionId":"{host_submission_id}"}}'
         ),
         content_type="application/json",
     )
     assert social_submit_response.status_code == 201
-    assert social_submit_response.json()["social"]["crowdFavorite"]["submissionId"] == submission_id
+    crowd_favorites = social_submit_response.json()["social"]["crowdFavorites"]
+    assert len(crowd_favorites) >= 1
+    assert crowd_favorites[0]["submissionId"] == host_submission_id
 
-    preset_submit_response = client.post(
+    # Guest sends a preset message
+    preset_submit_response = guest_client.post(
         "/social/submit/",
-        data='{"matchId":"%s","interactionType":"preset_message","presetMessage":"Nice blend!"}'
-        % match_id,
+        data=f'{{"matchId":"{match_id}","interactionType":"preset_message","presetMessage":"Nice blend!"}}',
         content_type="application/json",
     )
     assert preset_submit_response.status_code == 201
 
-    social_state_response = client.get(f"/social/state/?matchId={match_id}")
+    social_state_response = guest_client.get(f"/social/state/?matchId={match_id}")
     assert social_state_response.status_code == 200
     social_payload = social_state_response.json()["social"]
-    assert social_payload["submissionSummaries"][0]["upvoteCount"] == 1
+    host_summary = next(s for s in social_payload["submissionSummaries"] if s["displayName"] == "Social Host")
+    assert host_summary["upvoteCount"] == 1
     assert social_payload["interactions"][-1]["presetMessage"] == "Nice blend!"
     assert social_payload["presetMessages"] == ["Nice blend!", "Great match!", "So close!"]
 

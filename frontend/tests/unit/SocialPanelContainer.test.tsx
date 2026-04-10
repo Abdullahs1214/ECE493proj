@@ -42,7 +42,7 @@ test("renders social state and submits a preset message", async () => {
               hasHighlighted: false,
             },
           ],
-          crowdFavorite: null,
+          crowdFavorites: [],
         },
       }),
     })
@@ -74,7 +74,7 @@ test("renders social state and submits a preset message", async () => {
               hasHighlighted: false,
             },
           ],
-          crowdFavorite: null,
+          crowdFavorites: [],
         },
       }),
     });
@@ -82,14 +82,17 @@ test("renders social state and submits a preset message", async () => {
 
   render(<SocialPanelContainer matchId="match-1" />);
 
+  // SocialPanel renders immediately (not waiting for fetch)
+  expect(screen.getByRole("heading", { name: "Social" })).toBeInTheDocument();
+
   await waitFor(() => {
-    expect(screen.getByText("Social Interaction")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Nice blend!" })).toBeInTheDocument();
   });
 
   fireEvent.click(screen.getByRole("button", { name: "Nice blend!" }));
 
   await waitFor(() => {
-    expect(screen.getByText(/Nice blend!/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Nice blend!/).length).toBeGreaterThan(0);
   });
 
   vi.unstubAllGlobals();

@@ -4,7 +4,9 @@ from typing import Any
 
 from django.utils import timezone
 
-from apps.accounts.models import PlayerIdentity, Session
+from django.contrib.auth.hashers import check_password, make_password
+
+from apps.accounts.models import LocalCredential, PlayerIdentity, Session
 
 GUEST_SESSION_TIMEOUT_MINUTES = 30
 AUTHENTICATED_SESSION_TIMEOUT_DAYS = 7
@@ -81,6 +83,54 @@ def create_authenticated_session(
     )
 
 
+def register_local_account(username: str, password: str, display_name: str) -> Session:
+    username = username.strip()
+    display_name = display_name.strip()
+    if not username:
+        raise ValueError("Username is required.")
+    if not password:
+        raise ValueError("Password is required.")
+    if not display_name:
+        raise ValueError("Display name is required.")
+    if LocalCredential.objects.filter(username=username).exists():
+        raise ValueError("That username is already taken.")
+
+    identity = PlayerIdentity.objects.create(
+        identity_type=PlayerIdentity.IdentityType.AUTHENTICATED,
+        display_name=display_name,
+    )
+    LocalCredential.objects.create(
+        player=identity,
+        username=username,
+        password_hash=make_password(password),
+    )
+    return Session.objects.create(
+        player=identity,
+        session_type=Session.SessionType.AUTHENTICATED,
+        status=Session.Status.ACTIVE,
+    )
+
+
+def login_local_account(username: str, password: str) -> Session:
+    credential = (
+        LocalCredential.objects.select_related("player")
+        .filter(username=username.strip())
+        .first()
+    )
+    if credential is None or not check_password(password, credential.password_hash):
+        raise ValueError("Invalid username or password.")
+
+    Session.objects.filter(
+        player=credential.player, status=Session.Status.ACTIVE
+    ).update(status=Session.Status.LOGGED_OUT)
+
+    return Session.objects.create(
+        player=credential.player,
+        session_type=Session.SessionType.AUTHENTICATED,
+        status=Session.Status.ACTIVE,
+    )
+
+
 def get_active_session(session_id: str | None) -> Session | None:
     if not session_id:
         return None
@@ -108,7 +158,14 @@ def get_active_session(session_id: str | None) -> Session | None:
 
 
 def update_guest_display_name(session: Session, display_name: str) -> Session:
-    session.player.display_name = display_name.strip()
+    return update_display_name(session, display_name)
+
+
+def update_display_name(session: Session, display_name: str) -> Session:
+    display_name = display_name.strip()
+    if not display_name:
+        raise ValueError("Display name cannot be blank.")
+    session.player.display_name = display_name
     session.player.save(update_fields=["display_name"])
     session.refresh_from_db()
     return session

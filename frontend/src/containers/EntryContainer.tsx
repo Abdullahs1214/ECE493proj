@@ -8,7 +8,7 @@ import { useModeSelection } from "../hooks/useModeSelection";
 import { useSessionState } from "../hooks/useSessionState";
 
 export default function EntryContainer() {
-  const { session, loadState, errorMessage, enterAsGuest, enterWithOAuth, renameGuest, updateAvatar, clearSession } =
+  const { session, loadState, errorMessage, registerLocal, loginLocal, enterAsGuest, enterWithOAuth, renameGuest, updateAvatar, clearSession } =
     useSessionState();
   const { mode, selectMode, resetMode } = useModeSelection();
   const [draftDisplayName, setDraftDisplayName] = useState("");
@@ -76,6 +76,8 @@ export default function EntryContainer() {
           onDraftAvatarUrlChange={setDraftAvatarUrl}
           onGuestEntry={handleGuestEntry}
           onOAuthEntry={handleOAuthEntry}
+          onRegister={registerLocal}
+          onLogin={loginLocal}
           onRenameGuest={handleRenameGuest}
           onUpdateAvatar={handleUpdateAvatar}
           onClearAvatar={handleClearAvatar}

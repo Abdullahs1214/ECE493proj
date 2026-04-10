@@ -42,14 +42,16 @@ test("renders gameplay results with social state integration", async () => {
               hasHighlighted: false,
             },
           ],
-          crowdFavorite: {
-            submissionId: "submission-1",
-            playerId: "player-1",
-            displayName: "Winner",
-            reactionCount: 3,
-            upvoteCount: 2,
-            highlightCount: 1,
-          },
+          crowdFavorites: [
+            {
+              submissionId: "submission-1",
+              playerId: "player-1",
+              displayName: "Winner",
+              reactionCount: 3,
+              upvoteCount: 2,
+              highlightCount: 1,
+            },
+          ],
         },
       }),
     }),
@@ -58,6 +60,11 @@ test("renders gameplay results with social state integration", async () => {
   render(
     <ResultsContainer
       matchId="match-1"
+      mode="multiplayer"
+      currentRoundNumber={1}
+      totalRounds={3}
+      canAdvance={false}
+      matchLeaderboard={null}
       round={{
         roundId: "round-1",
         roundNumber: 1,
@@ -83,7 +90,7 @@ test("renders gameplay results with social state integration", async () => {
   );
 
   expect(screen.getByText("Round Results")).toBeInTheDocument();
-  expect(screen.getByText(/Winner/)).toBeInTheDocument();
+  expect(screen.getAllByText(/Winner/).length).toBeGreaterThan(0);
 
   await waitFor(() => {
     expect(screen.getByText(/3 reactions/)).toBeInTheDocument();

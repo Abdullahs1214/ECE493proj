@@ -8,6 +8,7 @@ from django.utils import timezone
 
 from apps.accounts.models import PlayerIdentity
 from apps.gameplay.models import Match, Round, ScoreRecord, Submission
+from django.db.models import Sum
 from apps.rooms.models import Room, RoomMembership
 from apps.gameplay.validators import remaining_seconds, validate_color_ranges
 from engine.round_engine import (
@@ -63,6 +64,29 @@ def _serialize_score_record(score_record: ScoreRecord) -> dict[str, Any]:
         "rank": score_record.rank,
         "tieBreakBasis": score_record.tie_break_basis,
     }
+
+
+def _serialize_match_leaderboard(match: Match) -> list[dict[str, Any]]:
+    rows = (
+        ScoreRecord.objects.filter(round__match=match)
+        .values("player__player_id", "player__display_name")
+        .annotate(total_score=Sum("score"))
+        .order_by("-total_score")
+    )
+    leaderboard = []
+    prev_score = None
+    rank = 0
+    for i, row in enumerate(rows):
+        if row["total_score"] != prev_score:
+            rank = i + 1
+        leaderboard.append({
+            "playerId": str(row["player__player_id"]),
+            "displayName": row["player__display_name"],
+            "totalScore": row["total_score"],
+            "rank": rank,
+        })
+        prev_score = row["total_score"]
+    return leaderboard
 
 
 def serialize_match_state(match: Match) -> dict[str, Any]:
@@ -126,6 +150,7 @@ def serialize_match_state(match: Match) -> dict[str, Any]:
         },
         "submissions": submissions,
         "results": [_serialize_score_record(score_record) for score_record in score_records],
+        "matchLeaderboard": _serialize_match_leaderboard(match) if match.match_status == Match.MatchStatus.ENDED else None,
     }
 
 

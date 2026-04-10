@@ -91,24 +91,32 @@ describe("realtime client and social panel", () => {
               hasHighlighted: false,
             },
           ],
-          crowdFavorite: {
-            submissionId: "submission-1",
-            playerId: "player-1",
-            displayName: "Player One",
-            reactionCount: 3,
-          },
+          crowdFavorites: [
+            {
+              submissionId: "submission-1",
+              playerId: "player-1",
+              displayName: "Player One",
+              reactionCount: 3,
+              upvoteCount: 2,
+              highlightCount: 1,
+            },
+          ],
         }}
+        toasts={[]}
         onPresetMessage={onPresetMessage}
         onUpvote={onUpvote}
         onHighlight={onHighlight}
       />,
     );
 
-    expect(screen.getByText("Crowd favorite: Player One with 3 reactions")).toBeInTheDocument();
+    expect(screen.getAllByText(/Crowd favorite/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Player One/).length).toBeGreaterThan(0);
     expect(screen.getByRole("button", { name: "Upvoted" })).toBeDisabled();
     expect(screen.getByRole("button", { name: "Highlighted" })).toBeDisabled();
-    expect(screen.getByText("Player One - upvote for Player Two - Nice blend!")).toBeInTheDocument();
-    expect(screen.getByText("Player Two - highlight")).toBeInTheDocument();
+    // Click "Show history" to reveal history list
+    fireEvent.click(screen.getByText(/Show history/));
+    expect(screen.getByText("Player One upvoted Player Two")).toBeInTheDocument();
+    expect(screen.getByText(/Player Two highlighted/)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Nice blend!" }));
     fireEvent.click(screen.getByRole("button", { name: "Upvote" }));
@@ -126,15 +134,16 @@ describe("realtime client and social panel", () => {
           presetMessages: [],
           interactions: [],
           submissionSummaries: [],
-          crowdFavorite: null,
+            crowdFavorites: [],
         }}
+        toasts={[]}
         onPresetMessage={vi.fn()}
         onUpvote={vi.fn()}
         onHighlight={vi.fn()}
       />,
     );
 
-    expect(screen.getByText("Crowd favorite: none yet")).toBeInTheDocument();
+    expect(screen.getByText("No crowd favorite yet.")).toBeInTheDocument();
   });
 
   test("subscribeToRoom parses messages and closes open sockets", () => {

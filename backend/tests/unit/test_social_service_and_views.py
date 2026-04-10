@@ -123,7 +123,7 @@ def test_get_social_state_allows_active_multiplayer_member() -> None:
 
     assert social_state["interactions"] == []
     assert social_state["submissionSummaries"] == []
-    assert social_state["crowdFavorite"] is None
+    assert social_state["crowdFavorites"] == []
 
 
 @pytest.mark.django_db
@@ -169,7 +169,7 @@ def test_social_state_without_reactions_has_no_crowd_favorite() -> None:
 
     assert social_state["submissionSummaries"][0]["upvoteCount"] == 0
     assert social_state["submissionSummaries"][0]["highlightCount"] == 0
-    assert social_state["crowdFavorite"] is None
+    assert social_state["crowdFavorites"] == []
 
 
 def test_social_view_load_request_data_handles_empty_invalid_and_non_dict_payloads() -> None:

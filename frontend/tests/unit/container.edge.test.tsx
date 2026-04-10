@@ -76,7 +76,7 @@ describe("container edge coverage", () => {
     });
     apiClientMock.startGameplay.mockRejectedValueOnce("bad-start");
 
-    const { rerender } = render(
+    const { rerender, container } = render(
       <LobbyContainer
         session={{
           sessionId: "session-1",
@@ -90,6 +90,7 @@ describe("container edge coverage", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 
@@ -108,16 +109,20 @@ describe("container edge coverage", () => {
     });
     expect(setErrorMessage).toHaveBeenCalledWith("Unable to join room.");
 
+    const roomWith2Members = {
+      roomId: "room-1",
+      roomStatus: "open" as const,
+      joinPolicy: "open" as const,
+      waitingPolicy: "late_join_waiting_allowed" as const,
+      hostPlayerId: "player-1",
+      hostDisplayName: "Host",
+      members: [
+        { roomMembershipId: "m1", membershipStatus: "active" as const, joinedAt: "2026-03-31T00:00:00Z", player: { playerId: "player-1", identityType: "guest" as const, displayName: "Host" } },
+        { roomMembershipId: "m2", membershipStatus: "active" as const, joinedAt: "2026-03-31T00:00:00Z", player: { playerId: "player-2", identityType: "guest" as const, displayName: "Guest" } },
+      ],
+    };
     lobbyHookMock.useRoomState.mockReturnValue({
-      room: {
-        roomId: "room-1",
-        roomStatus: "open",
-        joinPolicy: "open",
-        waitingPolicy: "late_join_waiting_allowed",
-        hostPlayerId: "player-1",
-        hostDisplayName: "Host",
-        members: [],
-      },
+      room: roomWith2Members,
       availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
@@ -142,15 +147,16 @@ describe("container edge coverage", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 
-    fireEvent.click(screen.getByText("Leave room"));
+    fireEvent.click(within(container).getByText("Leave room"));
     await waitFor(() => {
       expect(setErrorMessage).toHaveBeenCalledWith("Unable to leave room.");
     });
 
-    fireEvent.click(screen.getByText("Start gameplay"));
+    fireEvent.click(within(container).getByText("Start game"));
     await waitFor(() => {
       expect(setErrorMessage).toHaveBeenCalledWith("Unable to start gameplay.");
     });
@@ -189,6 +195,7 @@ describe("container edge coverage", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 
@@ -228,6 +235,7 @@ describe("container edge coverage", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 
@@ -242,16 +250,20 @@ describe("container edge coverage", () => {
       expect(setErrorMessage).toHaveBeenCalledWith("join failed");
     });
 
+    const room2Members = {
+      roomId: "room-err",
+      roomStatus: "open" as const,
+      joinPolicy: "open" as const,
+      waitingPolicy: "late_join_waiting_allowed" as const,
+      hostPlayerId: "player-1",
+      hostDisplayName: "Host",
+      members: [
+        { roomMembershipId: "m1", membershipStatus: "active" as const, joinedAt: "2026-03-31T00:00:00Z", player: { playerId: "player-1", identityType: "guest" as const, displayName: "Host" } },
+        { roomMembershipId: "m2", membershipStatus: "active" as const, joinedAt: "2026-03-31T00:00:00Z", player: { playerId: "player-2", identityType: "guest" as const, displayName: "Guest" } },
+      ],
+    };
     lobbyHookMock.useRoomState.mockReturnValue({
-      room: {
-        roomId: "room-err",
-        roomStatus: "open",
-        joinPolicy: "open",
-        waitingPolicy: "late_join_waiting_allowed",
-        hostPlayerId: "player-1",
-        hostDisplayName: "Host",
-        members: [],
-      },
+      room: room2Members,
       availableRooms: [],
       activeMatchId: null,
       errorMessage: null,
@@ -276,15 +288,16 @@ describe("container edge coverage", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 
-    fireEvent.click(view.getByText("Leave room"));
+    fireEvent.click(within(view.container).getByText("Leave room"));
     await waitFor(() => {
       expect(setErrorMessage).toHaveBeenCalledWith("leave failed");
     });
 
-    fireEvent.click(view.getByText("Start gameplay"));
+    fireEvent.click(within(view.container).getByText("Start game"));
     await waitFor(() => {
       expect(setErrorMessage).toHaveBeenCalledWith("start failed");
     });
@@ -300,7 +313,7 @@ describe("container edge coverage", () => {
         presetMessages: ["Nice blend!"],
         interactions: [],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       });
     realtimeMock.subscribeToMatch.mockImplementation((_matchId, messageHandler) => {
       onMessage = messageHandler;
@@ -324,7 +337,7 @@ describe("container edge coverage", () => {
         presetMessages: ["Nice blend!"],
         interactions: [],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       });
     });
   });
@@ -353,7 +366,7 @@ describe("container edge coverage", () => {
         presetMessages: [],
         interactions: [],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       }),
     );
 
@@ -368,7 +381,7 @@ describe("container edge coverage", () => {
         presetMessages: [],
         interactions: [],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       })
       .mockRejectedValueOnce("bad-refresh");
     realtimeMock.subscribeToMatch.mockImplementation((_matchId, messageHandler) => {
@@ -377,7 +390,7 @@ describe("container edge coverage", () => {
     });
 
     const view = render(<SocialPanelContainer matchId="match-3" />);
-    expect(view.container).toHaveTextContent("Social Interaction");
+    expect(view.container).toHaveTextContent("Social");
     onMessage?.({ event: "social_interaction_update" });
 
     await waitFor(() => {
@@ -389,7 +402,7 @@ describe("container edge coverage", () => {
     let onMessage: ((message: unknown) => void) | undefined;
 
     apiClientMock.getSocialState
-      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorite: null })
+      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorites: [] })
       .mockRejectedValueOnce(new Error("realtime refresh failed"));
     realtimeMock.subscribeToMatch.mockImplementation((_matchId: string, handler: (m: unknown) => void) => {
       onMessage = handler;
@@ -413,13 +426,13 @@ describe("container edge coverage", () => {
         presetMessages: [],
         interactions: [{ socialInteractionId: "social-1", interactionType: "upvote" }],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       })
       .mockResolvedValueOnce({
         presetMessages: [],
         interactions: [{ socialInteractionId: "social-2", interactionType: "highlight" }],
         submissionSummaries: [],
-        crowdFavorite: null,
+        crowdFavorites: [],
       });
     realtimeMock.subscribeToMatch.mockReturnValue(vi.fn());
 
@@ -437,7 +450,7 @@ describe("container edge coverage", () => {
           hasHighlighted: false,
         },
       ],
-      crowdFavorite: null,
+      crowdFavorites: [],
     });
 
     const firstView = render(<SocialPanelContainer matchId="match-4" onStateChange={onStateChange} />);
@@ -471,7 +484,7 @@ describe("container edge coverage", () => {
           hasHighlighted: false,
         },
       ],
-      crowdFavorite: null,
+      crowdFavorites: [],
     });
 
     const secondView = render(<SocialPanelContainer matchId="match-4" onStateChange={onStateChange} />);
@@ -493,7 +506,7 @@ describe("container edge coverage", () => {
       presetMessages: [],
       interactions: [{ socialInteractionId: "social-2", interactionType: "highlight" }],
       submissionSummaries: [],
-      crowdFavorite: null,
+      crowdFavorites: [],
     });
   });
 
@@ -571,7 +584,10 @@ describe("container edge coverage", () => {
       errorMessage: null,
       enterAsGuest,
       enterWithOAuth: vi.fn(),
+      registerLocal: vi.fn(),
+      loginLocal: vi.fn(),
       renameGuest,
+      updateAvatar: vi.fn(),
       clearSession,
     });
     modeHookMock.useModeSelection.mockReturnValue({
@@ -582,11 +598,12 @@ describe("container edge coverage", () => {
 
     const view = render(<EntryContainer />);
 
-    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "   " } });
+    fireEvent.click(screen.getByText("Change name"));
+    fireEvent.change(screen.getByLabelText("New display name"), { target: { value: "   " } });
     fireEvent.click(screen.getByText("Save name"));
     expect(renameGuest).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Display name"), { target: { value: "Casey" } });
+    fireEvent.change(screen.getByLabelText("New display name"), { target: { value: "Casey" } });
     fireEvent.click(screen.getByText("Save name"));
     await waitFor(() => {
       expect(renameGuest).toHaveBeenCalledWith("Casey");
@@ -624,6 +641,7 @@ describe("container edge coverage", () => {
       clearSession,
     });
     view.rerender(<EntryContainer />);
+    fireEvent.click(screen.getByRole("button", { name: "Guest" }));
     fireEvent.click(screen.getByText("Continue as guest"));
     await waitFor(() => {
       expect(enterAsGuest).toHaveBeenCalledTimes(1);
@@ -656,7 +674,7 @@ describe("container edge coverage", () => {
       player: { playerId: "p1", identityType: "guest" as const, displayName: "Host", profileAvatar: "" },
     };
 
-    const view = render(<LobbyContainer session={session} />);
+    const view = render(<LobbyContainer session={session} currentPlayerId="p1" />);
 
     // successful joinRoom — covers line 42 normal-completion branch
     fireEvent.change(view.getByLabelText("Room ID"), { target: { value: "room-ok" } });
@@ -684,7 +702,7 @@ describe("container edge coverage", () => {
       leaveRoom,
       deleteRoom: vi.fn(),
     });
-    view.rerender(<LobbyContainer session={session} />);
+    view.rerender(<LobbyContainer session={session} currentPlayerId="p1" />);
 
     // successful leaveRoom — covers line 50 normal-completion branch
     // use within(container) to avoid matching "Leave room" from prior tests still in DOM
@@ -696,8 +714,8 @@ describe("container edge coverage", () => {
     let onMessage: ((message: unknown) => void) | undefined;
 
     apiClientMock.getSocialState
-      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorite: null })
-      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorite: null });
+      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorites: [] })
+      .mockResolvedValueOnce({ presetMessages: [], interactions: [], submissionSummaries: [], crowdFavorites: [] });
     realtimeMock.subscribeToMatch.mockImplementation((_matchId: string, handler: (m: unknown) => void) => {
       onMessage = handler;
       return vi.fn();

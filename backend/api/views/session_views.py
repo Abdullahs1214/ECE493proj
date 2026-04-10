@@ -9,8 +9,11 @@ from api.schemas import error_response, session_response
 from services.identity_service import (
     create_guest_session,
     get_active_session,
+    login_local_account,
     logout_session,
+    register_local_account,
     serialize_session,
+    update_display_name,
     update_guest_display_name,
     update_player_avatar,
 )
@@ -67,9 +70,7 @@ def update_session_view(request):
         profile_avatar = str(payload.get("profileAvatar", "UNSET")).strip()
 
         if display_name:
-            if session.session_type != "guest":
-                raise APIError("Display name can only be changed for guest sessions.")
-            session = update_guest_display_name(session, display_name)
+            session = update_display_name(session, display_name)
 
         if profile_avatar != "UNSET":
             session = update_player_avatar(session, profile_avatar)
@@ -80,6 +81,35 @@ def update_session_view(request):
     except Exception as exc:
         return translate_api_error(exc)
 
+    return JsonResponse(session_response(serialize_session(session)))
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def register_local_view(request):
+    try:
+        payload = _load_request_data(request)
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", "")).strip()
+        display_name = str(payload.get("displayName", "")).strip()
+        session = register_local_account(username, password, display_name)
+    except Exception as exc:
+        return translate_api_error(exc)
+    request.session[SESSION_KEY] = str(session.session_id)
+    return JsonResponse(session_response(serialize_session(session)), status=201)
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def login_local_view(request):
+    try:
+        payload = _load_request_data(request)
+        username = str(payload.get("username", "")).strip()
+        password = str(payload.get("password", "")).strip()
+        session = login_local_account(username, password)
+    except Exception as exc:
+        return translate_api_error(exc)
+    request.session[SESSION_KEY] = str(session.session_id)
     return JsonResponse(session_response(serialize_session(session)))
 
 

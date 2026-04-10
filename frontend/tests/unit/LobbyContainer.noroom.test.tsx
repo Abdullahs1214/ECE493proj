@@ -55,6 +55,7 @@ describe("LobbyContainer no-room branch", () => {
             profileAvatar: "",
           },
         }}
+        currentPlayerId="player-1"
       />,
     );
 

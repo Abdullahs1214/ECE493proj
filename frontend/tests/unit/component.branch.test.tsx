@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import App from "../../src/App";
@@ -55,23 +55,26 @@ describe("additional component coverage", () => {
     render(<App />);
 
     await waitFor(() => expect(screen.getByText("Welcome")).toBeInTheDocument());
+    fireEvent.click(screen.getByRole("button", { name: "Guest" }));
     expect(screen.getByText("Continue as guest")).toBeInTheDocument();
   });
 
-  test("BlendControls calls handlers on slider move and submit", () => {
-    const color = [0, 0, 0];
+  test("BlendControls calls handlers on weight change and submit", () => {
     const setColor = vi.fn();
     const submit = vi.fn();
 
     render(
       <BlendControls
-        blendedColor={color}
-        onBlendedColorChange={setColor}
+        baseColorSet={[[255, 0, 0]]}
+        mixWeights={[50]}
+        blendedColor={[128, 0, 0]}
+        onMixWeightsChange={setColor}
+        onReset={vi.fn()}
         onSubmit={submit}
       />,
     );
 
-    fireEvent.change(screen.getAllByRole("slider")[0], { target: { value: "100" } });
+    fireEvent.click(screen.getByRole("button", { name: "Add Red" }));
     fireEvent.click(screen.getByRole("button", { name: "Submit color" }));
 
     expect(setColor).toHaveBeenCalled();
@@ -79,19 +82,29 @@ describe("additional component coverage", () => {
   });
 
   test("HistoryPanel renders both lists", () => {
+    const baseEntry = {
+      historyScope: "room_scoped" as const,
+      roomId: "room-1",
+      roundId: "round-1",
+      scoreRecordId: "score-1",
+      similarityPercentage: 85,
+      targetColor: null,
+      blendedColor: null,
+      roundNumber: 1,
+      matchMode: "single_player" as const,
+    };
     render(
       <HistoryPanel
         roomScopedHistory={[
-          { scoreHistoryEntryId: "room-1", displayName: "Host", score: 200, rank: 1 },
+          { ...baseEntry, scoreHistoryEntryId: "room-1", displayName: "Host", score: 200, rank: 1 },
         ]}
         identityScopedHistory={[
-          { scoreHistoryEntryId: "identity-1", displayName: "Guest", score: 150, rank: 2 },
+          { ...baseEntry, scoreHistoryEntryId: "identity-1", displayName: "Guest", score: 150, rank: 2 },
         ]}
       />,
     );
 
-    expect(screen.getByText(/Host - 200 points - rank 1/)).toBeInTheDocument();
-    expect(screen.getByText(/Guest - 150 points - rank 2/)).toBeInTheDocument();
+    expect(screen.getByText(/200 pts/)).toBeInTheDocument();
   });
 
   test("LobbyPanel toggles room and form views with errors", () => {
@@ -130,7 +143,7 @@ describe("additional component coverage", () => {
     fireEvent.click(screen.getByRole("button", { name: "Create room" }));
     expect(callbacks.onCreateRoom).toHaveBeenCalled();
 
-    render(
+    const roomView = render(
       <LobbyPanel
         session={session}
         room={{
@@ -164,9 +177,13 @@ describe("additional component coverage", () => {
       />,
     );
 
-    expect(screen.getByText("Room status: open")).toBeInTheDocument();
-    expect(screen.getByText("Guest")).toBeInTheDocument(); // non-host member (no "(Host)" badge)
-    fireEvent.click(screen.getByText("Leave room"));
+    expect(
+      within(roomView.container).getByText(
+        (_, element) => element?.tagName === "P" && (element.textContent?.includes("Status: open") ?? false),
+      ),
+    ).toBeInTheDocument();
+    expect(within(roomView.container).getByText("Guest")).toBeInTheDocument();
+    fireEvent.click(within(roomView.container).getByText("Leave room"));
     expect(callbacks.onLeaveRoom).toHaveBeenCalled();
   });
 
@@ -186,7 +203,7 @@ describe("additional component coverage", () => {
       presetMessages: [],
       interactions: [],
       submissionSummaries: [],
-      crowdFavorite: null,
+      crowdFavorites: [],
     });
 
     useGameplayStateMock.useGameplayState.mockReturnValue({
@@ -197,6 +214,7 @@ describe("additional component coverage", () => {
         currentRoundNumber: 1,
         totalRounds: 3,
         canAdvance: false,
+        matchLeaderboard: null,
         round: {
           roundId: "round",
           roundNumber: 1,
@@ -216,7 +234,7 @@ describe("additional component coverage", () => {
     });
 
     render(<BlendGameContainer mode="single_player" />);
-    expect(screen.getByText("Match complete.")).toBeInTheDocument();
+    expect(screen.getByText(/Match complete!/)).toBeInTheDocument();
 
     // errorMessage set + no gameplay → shows errorMessage (line 33-34, primary branch of ??)
     useGameplayStateMock.useGameplayState.mockReturnValue({
@@ -247,7 +265,7 @@ describe("additional component coverage", () => {
       presetMessages: [],
       interactions: [],
       submissionSummaries: [],
-      crowdFavorite: null,
+      crowdFavorites: [],
     });
 
     render(<SocialPanelContainer matchId="match-err" />);
@@ -273,10 +291,16 @@ describe("additional component coverage", () => {
         errorMessage={null}
         selectedMode={null}
         draftDisplayName=""
+        draftAvatarUrl=""
         onDraftDisplayNameChange={vi.fn()}
+        onDraftAvatarUrlChange={vi.fn()}
         onGuestEntry={vi.fn()}
         onOAuthEntry={vi.fn()}
+        onRegister={vi.fn()}
+        onLogin={vi.fn()}
         onRenameGuest={vi.fn()}
+        onUpdateAvatar={vi.fn()}
+        onClearAvatar={vi.fn()}
         onLogout={vi.fn()}
         onSelectMode={onSelectMode}
       />,

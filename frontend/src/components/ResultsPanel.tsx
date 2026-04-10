@@ -1,4 +1,8 @@
+import { useState } from "react";
+
 import type { GameplayResult, GameplayRound, SocialInteractionState } from "../types/game";
+import BlendSimulator from "./BlendSimulator";
+import { computeOptimalWeights } from "../utils/colorUtils";
 
 interface ResultsPanelProps {
   round: GameplayRound;
@@ -7,11 +11,15 @@ interface ResultsPanelProps {
 }
 
 export default function ResultsPanel({ round, results, social }: ResultsPanelProps) {
-  const winner = results.find((result) => result.rank === 1) ?? results[0] ?? null;
+  const [showSimulator, setShowSimulator] = useState(false);
+  const optimalWeights = computeOptimalWeights(round.baseColorSet, round.targetColor);
 
-  // Only show tie-break info when two or more players share the same score
+  const winners = results.filter((result) => result.rank === 1);
+  const winner = winners[0] ?? null;
+
   const scores = results.map((r) => r.score);
   const hasTie = scores.length > 1 && new Set(scores).size < scores.length;
+  const hasSharedFirstPlace = winners.length > 1;
 
   function closenessLabel(similarityPercentage: number) {
     if (similarityPercentage >= 95) return "Excellent match";
@@ -33,9 +41,52 @@ export default function ResultsPanel({ round, results, social }: ResultsPanelPro
         }}
       />
 
+      {/* Optimal blend hint */}
+      <div style={{ margin: "12px 0 4px" }}>
+        <p style={{ margin: "0 0 6px", fontWeight: 600, fontSize: "0.9rem" }}>Optimal blend to reach target:</p>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px", alignItems: "flex-end" }}>
+          {round.baseColorSet.map((color, i) => {
+            const pct = Math.round(optimalWeights[i] * 100);
+            if (pct === 0) return null;
+            return (
+              <div key={i} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "3px" }}>
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: "36px",
+                    height: "36px",
+                    borderRadius: "6px",
+                    background: `rgb(${color[0]},${color[1]},${color[2]})`,
+                    border: "1px solid rgba(0,0,0,0.15)",
+                  }}
+                  title={`RGB(${color.join(", ")})`}
+                />
+                <span style={{ fontSize: "0.75rem", fontWeight: 600 }}>{pct}%</span>
+              </div>
+            );
+          })}
+          <button
+            type="button"
+            className="history-toggle-btn"
+            style={{ fontSize: "0.78rem", alignSelf: "flex-end" }}
+            onClick={() => setShowSimulator((v) => !v)}
+          >
+            {showSimulator ? "Hide simulator" : "Try it →"}
+          </button>
+        </div>
+
+        {showSimulator ? (
+          <BlendSimulator targetColor={round.targetColor} initialWeights={optimalWeights} />
+        ) : null}
+      </div>
+
       {winner ? (
         <div className="result-highlight">
-          <strong>Winner: {winner.displayName}</strong>
+          <strong>
+            {hasSharedFirstPlace
+              ? `Winners (tied): ${winners.map((w) => w.displayName).join(", ")}`
+              : `Winner: ${winner.displayName}`}
+          </strong>
           <p>
             {winner.score} points with a {winner.similarityPercentage}% match.
           </p>
@@ -62,7 +113,7 @@ export default function ResultsPanel({ round, results, social }: ResultsPanelPro
             <li key={result.playerId} className={isWinner ? "result-row result-row--winner" : "result-row"}>
               <p style={{ fontWeight: isWinner ? 700 : 400 }}>
                 #{result.rank} {result.displayName}
-                {isWinner ? " — Winner" : ""}
+                {isWinner ? (hasSharedFirstPlace ? " — Winner (tied)" : " — Winner") : ""}
               </p>
               <p>
                 {result.score} points — {result.similarityPercentage}% match —{" "}

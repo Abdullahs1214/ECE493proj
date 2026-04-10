@@ -93,6 +93,7 @@ async def _forward_broker_messages(send, queue: asyncio.Queue[dict[str, Any]]) -
 
 async def _forward_timer_updates(send, player, match_id: str) -> None:
     from services.match_service import get_match_state, serialize_match_state
+    from websockets.results_publisher import publish_result_publication, publish_scoring_update
 
     previous_status = None
     while True:
@@ -103,16 +104,25 @@ async def _forward_timer_updates(send, player, match_id: str) -> None:
             return
 
         gameplay = await sync_to_async(serialize_match_state)(match)
-        if gameplay["matchStatus"] == "ended":
+        current_status = gameplay["matchStatus"]
+
+        # Timer expired: finalize_round_if_ready (called inside get_match_state) just
+        # transitioned the round from active to results/ended. Broadcast to all connected
+        # clients via the broker so they don't have to wait for their own API call.
+        if current_status in ("results", "ended") and previous_status in ("active_round", "scoring"):
+            await sync_to_async(publish_scoring_update)(match)
+            await sync_to_async(publish_result_publication)(match)
+
+        if current_status == "ended":
             return
-        if gameplay["matchStatus"] == "results":
-            previous_status = gameplay["matchStatus"]
+        if current_status == "results":
+            previous_status = current_status
             continue
-        if gameplay["matchStatus"] in ["active_round", "scoring"]:
+        if current_status in ("active_round", "scoring"):
             if previous_status == "results":
                 await _send_json(send, round_start_update(gameplay))
             await _send_json(send, timer_update(gameplay))
-            previous_status = gameplay["matchStatus"]
+            previous_status = current_status
 
 
 async def _receive_until_disconnect(receive) -> None:

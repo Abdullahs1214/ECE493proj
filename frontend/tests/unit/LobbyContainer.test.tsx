@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 import LobbyContainer from "../../src/containers/LobbyContainer";
@@ -52,15 +52,52 @@ test("creates a room and shows host and members in the lobby", async () => {
                 roomMembershipId: "membership-1",
                 membershipStatus: "active",
                 joinedAt: "2026-03-31T00:00:00Z",
-                player: {
-                  playerId: "player-1",
-                  displayName: "Host Player",
-                  identityType: "guest",
-                },
+                player: { playerId: "player-1", displayName: "Host Player", identityType: "guest" },
+              },
+              {
+                roomMembershipId: "membership-2",
+                membershipStatus: "active",
+                joinedAt: "2026-03-31T00:00:00Z",
+                player: { playerId: "player-2", displayName: "Player 2", identityType: "guest" },
               },
             ],
           },
         }),
+      })
+      // getCurrentRoom after createRoom effect re-runs
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({
+          room: {
+            roomId: "room-1",
+            roomStatus: "open",
+            joinPolicy: "open",
+            waitingPolicy: "late_join_waiting_allowed",
+            hostPlayerId: "player-1",
+            hostDisplayName: "Host Player",
+            members: [
+              {
+                roomMembershipId: "membership-1",
+                membershipStatus: "active",
+                joinedAt: "2026-03-31T00:00:00Z",
+                player: { playerId: "player-1", displayName: "Host Player", identityType: "guest" },
+              },
+              {
+                roomMembershipId: "membership-2",
+                membershipStatus: "active",
+                joinedAt: "2026-03-31T00:00:00Z",
+                player: { playerId: "player-2", displayName: "Player 2", identityType: "guest" },
+              },
+            ],
+          },
+        }),
+      })
+      // getRooms after createRoom effect re-runs
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ rooms: [] }),
       })
       .mockResolvedValueOnce({
         ok: true,
@@ -84,6 +121,7 @@ test("creates a room and shows host and members in the lobby", async () => {
             },
             submissions: [],
             results: [],
+            matchLeaderboard: null,
           },
         }),
       })
@@ -109,12 +147,13 @@ test("creates a room and shows host and members in the lobby", async () => {
             },
             submissions: [],
             results: [],
+            matchLeaderboard: null,
           },
         }),
       }),
   );
 
-  render(
+  const view = render(
     <LobbyContainer
       session={{
         sessionId: "session-1",
@@ -128,19 +167,31 @@ test("creates a room and shows host and members in the lobby", async () => {
           profileAvatar: "",
         },
       }}
+      currentPlayerId="player-1"
     />,
   );
+
+  await waitFor(() => {
+    expect(screen.getByText("No active rooms. Create one!")).toBeInTheDocument();
+  });
 
   fireEvent.click(screen.getByText("Create room"));
 
   await waitFor(() => {
-    expect(screen.getByText("Room ID: room-1")).toBeInTheDocument();
+    expect(
+      within(view.container).getByText(
+        (_, element) => element?.tagName === "P" && (element.textContent?.includes("Status: open") ?? false),
+      ),
+    ).toBeInTheDocument();
   });
 
-  expect(screen.getByText("Host: Host Player")).toBeInTheDocument();
-  expect(screen.getByText("Host Player (Host)")).toBeInTheDocument();
+  expect(
+    within(view.container).getByText(
+      (_, element) => element?.tagName === "P" && (element.textContent?.includes("Host: Host Player") ?? false),
+    ),
+  ).toBeInTheDocument();
 
-  fireEvent.click(screen.getByText("Start gameplay"));
+  fireEvent.click(screen.getByText("Start game"));
 
   await waitFor(() => {
     expect(screen.getByText("Blend Your Color")).toBeInTheDocument();

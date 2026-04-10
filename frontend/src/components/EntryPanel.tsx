@@ -31,6 +31,8 @@ interface EntryPanelProps {
   onDraftAvatarUrlChange: (value: string) => void;
   onGuestEntry: () => void;
   onOAuthEntry: (provider: "google" | "github") => void;
+  onRegister: (username: string, password: string, displayName: string) => void;
+  onLogin: (username: string, password: string) => void;
   onRenameGuest: () => void;
   onUpdateAvatar: () => void;
   onClearAvatar: () => void;
@@ -48,7 +50,8 @@ export default function EntryPanel({
   onDraftDisplayNameChange,
   onDraftAvatarUrlChange,
   onGuestEntry,
-  onOAuthEntry,
+  onRegister,
+  onLogin,
   onRenameGuest,
   onUpdateAvatar,
   onClearAvatar,
@@ -58,6 +61,11 @@ export default function EntryPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [showAvatarUpload, setShowAvatarUpload] = useState(false);
+  const [showNameEdit, setShowNameEdit] = useState(false);
+  const [authTab, setAuthTab] = useState<"guest" | "login" | "register">("login");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [regDisplayName, setRegDisplayName] = useState("");
 
   async function handleFiles(files: FileList | null) {
     if (!files || files.length === 0) return;
@@ -76,6 +84,16 @@ export default function EntryPanel({
   function handleCancelAvatar() {
     setShowAvatarUpload(false);
     onDraftAvatarUrlChange("");
+  }
+
+  function handleSaveName() {
+    onRenameGuest();
+    setShowNameEdit(false);
+  }
+
+  function handleCancelName() {
+    setShowNameEdit(false);
+    onDraftDisplayNameChange("");
   }
 
   const modeLabel =
@@ -118,13 +136,44 @@ export default function EntryPanel({
 
             <div style={{ flex: 1 }}>
               <p style={{ margin: 0, fontWeight: 600 }}>{session.player.displayName}</p>
-              <p style={{ margin: 0, fontSize: "0.82rem", opacity: 0.5 }}>{session.sessionType}</p>
+              <button
+                type="button"
+                className="history-toggle-btn"
+                style={{ fontSize: "0.72rem", marginTop: "2px" }}
+                onClick={() => { onDraftDisplayNameChange(""); setShowNameEdit((v) => !v); }}
+              >
+                {showNameEdit ? "Cancel" : "Change name"}
+              </button>
             </div>
 
             <button type="button" className="logout-btn" onClick={onLogout}>
               Log out
             </button>
           </div>
+
+          {/* Display name edit — shown on demand */}
+          {showNameEdit ? (
+            <>
+              <label style={{ marginTop: "10px", display: "block" }}>
+                New display name
+                <input
+                  value={draftDisplayName}
+                  onChange={(e) => onDraftDisplayNameChange(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && draftDisplayName.trim() && handleSaveName()}
+                  placeholder={session.player.displayName}
+                  autoFocus
+                />
+              </label>
+              <div className="actions">
+                <button type="button" onClick={handleSaveName} disabled={!draftDisplayName.trim()}>
+                  Save name
+                </button>
+                <button type="button" className="history-toggle-btn" onClick={handleCancelName}>
+                  Cancel
+                </button>
+              </div>
+            </>
+          ) : null}
 
           {/* Avatar upload — hidden until avatar is clicked or toggled */}
           {showAvatarUpload ? (
@@ -169,25 +218,6 @@ export default function EntryPanel({
             </>
           ) : null}
 
-          {/* Display name (guest only) */}
-          {session.sessionType === "guest" ? (
-            <>
-              <label style={{ marginTop: "12px", display: "block" }}>
-                Display name
-                <input
-                  value={draftDisplayName}
-                  onChange={(event) => onDraftDisplayNameChange(event.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && onRenameGuest()}
-                />
-              </label>
-              <div className="actions">
-                <button type="button" onClick={onRenameGuest}>
-                  Save name
-                </button>
-              </div>
-            </>
-          ) : null}
-
           {/* Mode selection */}
           <div className="mode-group">
             <p style={{ margin: "16px 0 8px", fontWeight: 600 }}>Choose a mode</p>
@@ -203,18 +233,105 @@ export default function EntryPanel({
         </>
       ) : (
         <>
-          <p style={{ opacity: 0.6 }}>Sign in to save your scores, or jump in as a guest.</p>
-          <div className="actions">
-            <button type="button" onClick={onGuestEntry}>
-              Continue as guest
+          <p style={{ opacity: 0.6 }}>Create an account to save your history, or jump in as a guest.</p>
+
+          {/* Auth tab switcher */}
+          <div className="actions" style={{ marginBottom: "12px" }}>
+            <button
+              type="button"
+              className={authTab === "login" ? "" : "history-toggle-btn"}
+              onClick={() => setAuthTab("login")}
+            >
+              Log in
             </button>
-            <button type="button" onClick={() => onOAuthEntry("google")}>
-              Sign in with Google
+            <button
+              type="button"
+              className={authTab === "register" ? "" : "history-toggle-btn"}
+              onClick={() => setAuthTab("register")}
+            >
+              Register
             </button>
-            <button type="button" onClick={() => onOAuthEntry("github")}>
-              Sign in with GitHub
+            <button
+              type="button"
+              className={authTab === "guest" ? "" : "history-toggle-btn"}
+              onClick={() => setAuthTab("guest")}
+            >
+              Guest
             </button>
           </div>
+
+          {authTab === "login" ? (
+            <>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                Username
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onLogin(username, password)}
+                  autoComplete="username"
+                />
+              </label>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && onLogin(username, password)}
+                  autoComplete="current-password"
+                />
+              </label>
+              <div className="actions">
+                <button type="button" onClick={() => onLogin(username, password)}>
+                  Log in
+                </button>
+              </div>
+            </>
+          ) : authTab === "register" ? (
+            <>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                Display name
+                <input
+                  value={regDisplayName}
+                  onChange={(e) => setRegDisplayName(e.target.value)}
+                  autoComplete="name"
+                />
+              </label>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                Username
+                <input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                />
+              </label>
+              <label style={{ display: "block", marginBottom: "8px" }}>
+                Password
+                <input
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                />
+              </label>
+              <div className="actions">
+                <button type="button" onClick={() => onRegister(username, password, regDisplayName)}>
+                  Create account
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p style={{ opacity: 0.6, fontSize: "0.85rem" }}>
+                Scores won't be saved between sessions as a guest.
+              </p>
+              <div className="actions">
+                <button type="button" onClick={onGuestEntry}>
+                  Continue as guest
+                </button>
+              </div>
+            </>
+          )}
         </>
       )}
     </section>

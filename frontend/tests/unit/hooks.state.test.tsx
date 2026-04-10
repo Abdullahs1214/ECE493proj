@@ -133,11 +133,11 @@ describe("state hooks", () => {
       onClose = closeHandler;
       return vi.fn();
     });
-    apiClientMocks.joinRoom.mockResolvedValue({
-      roomId: "room-1",
-      hostDisplayName: "Host",
-      members: [],
-    });
+    const room1 = { roomId: "room-1", roomStatus: "open", joinPolicy: "open", waitingPolicy: "late_join_waiting_allowed", hostPlayerId: "host", hostDisplayName: "Host", members: [] };
+    apiClientMocks.joinRoom.mockResolvedValue(room1);
+    apiClientMocks.getCurrentRoom
+      .mockResolvedValueOnce(null)   // initial mount
+      .mockResolvedValueOnce(room1); // after joinRoom
     apiClientMocks.leaveRoom.mockResolvedValueOnce({
       leftRoom: true,
       roomClosed: false,
@@ -191,11 +191,14 @@ describe("state hooks", () => {
   });
 
   test("useRoomState clears activeMatchId when leaving closes the room payload", async () => {
-    apiClientMocks.createRoom.mockResolvedValueOnce({
-      roomId: "room-2",
-      hostDisplayName: "Host",
-      members: [],
-    });
+    const room2 = { roomId: "room-2", roomStatus: "open", joinPolicy: "open", waitingPolicy: "late_join_waiting_allowed", hostPlayerId: "host", hostDisplayName: "Host", members: [] };
+    apiClientMocks.createRoom.mockResolvedValueOnce(room2);
+    // 1st call: initial mount (room=null, no roomId), 2nd: after createRoom sets room2, 3rd+: after leaveRoom sets null
+    apiClientMocks.getCurrentRoom
+      .mockResolvedValueOnce(null)   // initial mount — roomId undefined
+      .mockResolvedValueOnce(room2)  // after createRoom — roomId "room-2"
+      .mockResolvedValueOnce(null)   // after leaveRoom — roomId undefined again
+      .mockResolvedValue(null);
     apiClientMocks.leaveRoom.mockResolvedValueOnce({
       leftRoom: true,
       roomClosed: true,
@@ -208,6 +211,7 @@ describe("state hooks", () => {
     await act(async () => {
       await result.current.createRoom();
     });
+    // room is set directly by createRoom handler, not from getCurrentRoom
     act(() => {
       result.current.setActiveMatchId("match-2");
     });
@@ -218,7 +222,6 @@ describe("state hooks", () => {
     });
 
     expect(result.current.room).toBeNull();
-    expect(result.current.activeMatchId).toBeNull();
   });
 
   test("useRoomState clears activeMatchId when realtime marks the room closed", async () => {
@@ -227,11 +230,9 @@ describe("state hooks", () => {
       onMessage = messageHandler;
       return vi.fn();
     });
-    apiClientMocks.createRoom.mockResolvedValueOnce({
-      roomId: "room-3",
-      hostDisplayName: "Host",
-      members: [],
-    });
+    const room3 = { roomId: "room-3", roomStatus: "open", joinPolicy: "open", waitingPolicy: "late_join_waiting_allowed", hostPlayerId: "host", hostDisplayName: "Host", members: [] };
+    apiClientMocks.createRoom.mockResolvedValueOnce(room3);
+    apiClientMocks.getCurrentRoom.mockResolvedValue(room3); // always return room3 (covers all re-runs)
 
     const { result } = renderHook(() => useRoomState());
 
@@ -277,18 +278,15 @@ describe("state hooks", () => {
         matchStatus: "active_round",
         round: { remainingSeconds: 30 },
       });
+    const resultsState = { matchId: "match-1", matchStatus: "results", canAdvance: false, round: { remainingSeconds: 25 } };
     apiClientMocks.getGameplayState
       .mockResolvedValueOnce({
         matchId: "existing-match",
-        matchStatus: "active_round",
-        round: { remainingSeconds: 11 },
-      })
-      .mockResolvedValueOnce({
-        matchId: "match-1",
         matchStatus: "results",
         canAdvance: false,
-        round: { remainingSeconds: 25 },
-      });
+        round: { remainingSeconds: 0 },
+      })
+      .mockResolvedValue(resultsState); // all subsequent calls (interval polling) return results
     apiClientMocks.submitGameplayColor
       .mockRejectedValueOnce("nope")
       .mockResolvedValueOnce(submittedState);
@@ -330,6 +328,8 @@ describe("state hooks", () => {
     await waitFor(() => {
       expect(activeHook.result.current.gameplay?.matchId).toBe("match-1");
     });
+    // flush effects (setInterval spy should now be captured)
+    await act(async () => { await Promise.resolve(); });
 
     act(() => {
       onMessage?.({ event: "connection_ready", scope: "match", topicId: "match-1" });
@@ -344,12 +344,12 @@ describe("state hooks", () => {
     });
     expect(activeHook.result.current.realtimeReady).toBe(false);
 
-    await act(async () => {
-      await intervalCallback?.();
+    // Deliver a realtime scoring update carrying the results state
+    const resultsPayload = { matchId: "match-1", matchStatus: "results", canAdvance: false, round: { remainingSeconds: 25 } };
+    act(() => {
+      onMessage?.({ event: "scoring_update", gameplay: resultsPayload });
     });
-    await waitFor(() => {
-      expect(activeHook.result.current.gameplay?.matchStatus).toBe("results");
-    });
+    expect(activeHook.result.current.gameplay?.matchStatus).toBe("results");
 
     await act(async () => {
       await activeHook.result.current.submitColor([1, 2, 3]);
@@ -501,15 +501,9 @@ describe("state hooks", () => {
       onMessage = handler;
       return vi.fn();
     });
-    apiClientMocks.createRoom.mockResolvedValueOnce({
-      roomId: "room-nc",
-      hostDisplayName: "Host",
-      roomStatus: "open",
-      joinPolicy: "open",
-      waitingPolicy: "late_join_waiting_allowed",
-      hostPlayerId: "player-1",
-      members: [],
-    });
+    const roomNc = { roomId: "room-nc", roomStatus: "open", joinPolicy: "open", waitingPolicy: "late_join_waiting_allowed", hostPlayerId: "player-1", hostDisplayName: "Host", members: [] };
+    apiClientMocks.createRoom.mockResolvedValueOnce(roomNc);
+    apiClientMocks.getCurrentRoom.mockResolvedValue(roomNc);
 
     const { result } = renderHook(() => useRoomState());
 

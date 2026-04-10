@@ -2,6 +2,8 @@ import { useEffect, useState } from "react";
 
 import {
   createGuestSession,
+  loginLocalAccount,
+  registerLocalAccount,
   signInWithOAuth,
   getCurrentSession,
   logoutSession,
@@ -71,6 +73,30 @@ export function useSessionState() {
     window.history.replaceState({}, "", url.toString());
   }, []);
 
+  async function registerLocal(username: string, password: string, displayName: string) {
+    setErrorMessage(null);
+    try {
+      const nextSession = await registerLocalAccount(username, password, displayName);
+      setSession(nextSession);
+      setLoadState("ready");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Unable to create account.");
+      setLoadState("ready");
+    }
+  }
+
+  async function loginLocal(username: string, password: string) {
+    setErrorMessage(null);
+    try {
+      const nextSession = await loginLocalAccount(username, password);
+      setSession(nextSession);
+      setLoadState("ready");
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : "Invalid username or password.");
+      setLoadState("ready");
+    }
+  }
+
   async function enterAsGuest(displayName?: string) {
     setErrorMessage(null);
     try {
@@ -129,6 +155,8 @@ export function useSessionState() {
     session,
     loadState,
     errorMessage,
+    registerLocal,
+    loginLocal,
     enterAsGuest,
     enterWithOAuth,
     renameGuest,

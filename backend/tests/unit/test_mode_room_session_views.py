@@ -293,7 +293,7 @@ def test_update_session_view_requires_non_blank_display_name() -> None:
     response = session_views.update_session_view(request)
 
     assert response.status_code == 400
-    assert _json(response) == {"error": "displayName is required."}
+    assert _json(response) == {"error": "displayName or profileAvatar is required."}
 
 
 @pytest.mark.django_db

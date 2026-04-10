@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import BlendControls from "../components/BlendControls";
 import { useGameplayState } from "../hooks/useGameplayState";
@@ -59,6 +59,8 @@ export default function BlendGameContainer({
   const [mixWeights, setMixWeights] = useState<number[]>([]);
   const [hasLocallySubmitted, setHasLocallySubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const mixWeightsRef = useRef(mixWeights);
+  mixWeightsRef.current = mixWeights;
 
   const blendedColor = gameplay
     ? blendFromWeights(gameplay.round.baseColorSet, mixWeights)
@@ -72,6 +74,23 @@ export default function BlendGameContainer({
     setIsSubmitting(false);
     setMixWeights(defaultMixWeights(gameplay.round.baseColorSet.length));
   }, [gameplay?.matchId, gameplay?.round.roundId]);
+
+  // Auto-submit with current weights when timer expires
+  useEffect(() => {
+    if (
+      gameplay?.round.remainingSeconds === 0 &&
+      gameplay.matchStatus === "active_round" &&
+      !hasLocallySubmitted &&
+      !isSubmitting
+    ) {
+      setIsSubmitting(true);
+      submitColor(mixWeightsRef.current)
+        .then(() => setHasLocallySubmitted(true))
+        .catch(() => {/* backend may have already created a submission */})
+        .finally(() => setIsSubmitting(false));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gameplay?.round.remainingSeconds]);
 
   if (isLoading) {
     return <section className="status-card">Loading gameplay...</section>;
@@ -87,6 +106,7 @@ export default function BlendGameContainer({
         matchId={gameplay.matchId}
         round={gameplay.round}
         results={gameplay.results}
+        matchLeaderboard={gameplay.matchLeaderboard}
         mode={mode}
         currentRoundNumber={gameplay.currentRoundNumber}
         totalRounds={gameplay.totalRounds}

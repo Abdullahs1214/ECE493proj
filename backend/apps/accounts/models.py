@@ -16,6 +16,17 @@ class PlayerIdentity(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+class LocalCredential(models.Model):
+    player = models.OneToOneField(
+        PlayerIdentity,
+        on_delete=models.CASCADE,
+        related_name="local_credential",
+    )
+    username = models.CharField(max_length=64, unique=True)
+    password_hash = models.CharField(max_length=256)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+
 class Session(models.Model):
     class SessionType(models.TextChoices):
         AUTHENTICATED = "authenticated", "Authenticated"

@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { expect, test, vi } from "vitest";
 
 import EntryContainer from "../../src/containers/EntryContainer";
@@ -76,27 +76,35 @@ test("supports guest entry and mode selection handoff", async () => {
     });
   vi.stubGlobal("fetch", fetchMock);
 
-  render(<EntryContainer />);
+  const view = render(<EntryContainer />);
 
   await waitFor(() => {
-    expect(screen.getByText("Continue as guest")).toBeInTheDocument();
+    expect(screen.getByText("Welcome")).toBeInTheDocument();
   });
 
+  // Switch to guest tab then click Continue as guest
+  fireEvent.click(screen.getByRole("button", { name: "Guest" }));
   fireEvent.click(screen.getByText("Continue as guest"));
 
   await waitFor(() => {
-    expect(screen.getByText("Playing as: Guest 1")).toBeInTheDocument();
+    expect(screen.getByText("Guest 1")).toBeInTheDocument();
   });
 
   fireEvent.click(screen.getByText("Multiplayer"));
-
-  expect(screen.getByText("Selected mode: Multiplayer")).toBeInTheDocument();
+  await waitFor(() => {
+    expect(screen.getByText("Multiplayer Room")).toBeInTheDocument();
+  });
 
   fireEvent.click(screen.getByText("Create room"));
 
   await waitFor(() => {
-    expect(screen.getByText("Room ID: room-1")).toBeInTheDocument();
+    expect(
+      within(view.container).getByText(
+        (_, element) => element?.tagName === "P" && (element.textContent?.includes("Status: open") ?? false),
+      ),
+    ).toBeInTheDocument();
   });
 
+  view.unmount();
   vi.unstubAllGlobals();
 });
