@@ -132,6 +132,7 @@ cd backend
 source .venv/bin/activate
 
 python manage.py migrate          # apply migrations
+pip install wsproto
 uvicorn blend_colour_game.asgi:application --reload --ws wsproto       # start dev server
 
 pytest                            # run backend tests
