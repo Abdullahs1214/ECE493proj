@@ -138,9 +138,6 @@ python manage.py migrate          # apply migrations
 pip install wsproto              # install wsproto support
 uvicorn blend_colour_game.asgi:application --reload --ws wsproto  # start dev server
 
-pytest                            # run backend tests
-coverage run --branch --source=api,apps,engine,services,websockets -m pytest tests
-coverage report -m --omit="*/migrations/*,*/tests/*,*/__init__.py,*/apps.py,blend_colour_game/settings.py,blend_colour_game/urls.py"
 ruff check .                      # lint
 ```
 
@@ -152,10 +149,47 @@ cd frontend
 npm install
 npm run dev       # start dev server
 npm run build     # production build
-npm install
 npm run test      # run unit tests
-npm install
 npm run coverage  # test coverage report
+```
+
+---
+
+## Testing Instructions
+
+### Backend tests and coverage
+
+In a fresh clone, the backend test suite requires runtime dependencies, test dependencies, and Django environment variables.
+
+```bash
+cd backend
+
+python3 -m venv .venv
+source .venv/bin/activate        # macOS / Linux
+# .venv\Scripts\activate         # Windows
+
+pip install -r requirements.txt
+pip install pytest pytest-django coverage ruff wsproto
+
+export PYTHONPATH=$(pwd)
+export DJANGO_SETTINGS_MODULE=blend_colour_game.settings
+
+python manage.py migrate
+
+pytest tests
+
+coverage erase
+coverage run --branch --source=api,apps,engine,services,websockets -m pytest tests
+coverage report -m --omit="*/migrations/*,*/tests/*,*/__init__.py,*/apps.py,blend_colour_game/settings.py,blend_colour_game/urls.py"
+```
+
+### Frontend tests and coverage
+
+```bash
+cd frontend
+npm install
+npm test
+npm run coverage
 ```
 
 ---
