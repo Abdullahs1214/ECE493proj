@@ -132,7 +132,7 @@ cd backend
 source .venv/bin/activate
 
 python manage.py migrate          # apply migrations
-python manage.py runserver        # start dev server
+uvicorn blend_colour_game.asgi:application --reload --ws wsproto       # start dev server
 
 pytest                            # run backend tests
 pytest --cov=. --cov-report=term  # with coverage
