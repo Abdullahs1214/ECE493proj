@@ -8,6 +8,7 @@ const RECENT_COUNT = 3;
 
 interface HistoryPanelProps {
   session?: Session | null;
+  currentRoomId?: string | null;
   roomScopedHistory: HistoryEntry[];
   identityScopedHistory: HistoryEntry[];
 }
@@ -166,6 +167,7 @@ function CollapsibleHistoryList({ entries, emptyText }: { entries: HistoryEntry[
 
 export default function HistoryPanel({
   session,
+  currentRoomId = null,
   roomScopedHistory,
   identityScopedHistory,
 }: HistoryPanelProps) {
@@ -174,7 +176,12 @@ export default function HistoryPanel({
       <p className="eyebrow">History</p>
       <h2>Score History</h2>
 
-      <h3>Recent matches</h3>
+      <h3>{currentRoomId ? "Current room history" : "Recent room history"}</h3>
+      <p style={{ marginTop: "0", fontSize: "0.82rem", opacity: 0.6 }}>
+        {currentRoomId
+          ? "Showing results from the room you are currently in."
+          : "Showing your saved room-scoped results from recent rooms."}
+      </p>
       <CollapsibleHistoryList entries={roomScopedHistory} emptyText="No matches yet." />
 
       {session?.sessionType === "authenticated" ? (
@@ -184,7 +191,7 @@ export default function HistoryPanel({
         </>
       ) : (
         <p style={{ marginTop: "12px", fontSize: "0.82rem", opacity: 0.5 }}>
-          Create an account to keep an all-time history across sessions.
+          Create an account to keep an all-time history across rooms and sessions.
         </p>
       )}
     </section>

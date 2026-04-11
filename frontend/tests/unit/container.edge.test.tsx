@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 
 
@@ -207,6 +207,7 @@ describe("container edge coverage", () => {
     const createRoom = vi.fn().mockRejectedValueOnce(new Error("create failed"));
     const joinRoom = vi.fn().mockRejectedValueOnce(new Error("join failed"));
     const leaveRoom = vi.fn().mockRejectedValueOnce(new Error("leave failed"));
+    const deleteRoom = vi.fn().mockRejectedValueOnce(new Error("delete failed"));
     lobbyHookMock.useRoomState.mockReturnValue({
       room: null,
       availableRooms: [],
@@ -217,7 +218,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
-      deleteRoom: vi.fn(),
+      deleteRoom,
     });
     apiClientMock.startGameplay.mockRejectedValueOnce(new Error("start failed"));
 
@@ -272,7 +273,7 @@ describe("container edge coverage", () => {
       createRoom,
       joinRoom,
       leaveRoom,
-      deleteRoom: vi.fn(),
+      deleteRoom,
     });
     view.rerender(
       <LobbyContainer
@@ -297,9 +298,116 @@ describe("container edge coverage", () => {
       expect(setErrorMessage).toHaveBeenCalledWith("leave failed");
     });
 
+    fireEvent.click(within(view.container).getByText("Delete room"));
+    await waitFor(() => {
+      expect(setErrorMessage).toHaveBeenCalledWith("delete failed");
+    });
+
     fireEvent.click(within(view.container).getByText("Start game"));
     await waitFor(() => {
       expect(setErrorMessage).toHaveBeenCalledWith("start failed");
+    });
+  });
+
+  test("LobbyContainer covers join-by-id error branch", async () => {
+    const setErrorMessage = vi.fn();
+    const joinRoom = vi.fn().mockRejectedValueOnce(new Error("join by id failed"));
+    lobbyHookMock.useRoomState.mockReturnValue({
+      room: {
+        roomId: "room-low",
+        roomStatus: "open",
+        joinPolicy: "open",
+        waitingPolicy: "late_join_waiting_allowed",
+        hostPlayerId: "player-1",
+        hostDisplayName: "Host",
+        members: [
+          {
+            roomMembershipId: "m1",
+            membershipStatus: "active",
+            joinedAt: "2026-03-31T00:00:00Z",
+            player: { playerId: "player-1", identityType: "guest", displayName: "Host" },
+          },
+        ],
+      },
+      availableRooms: [],
+      activeMatchId: null,
+      errorMessage: null,
+      setErrorMessage,
+      setActiveMatchId: vi.fn(),
+      createRoom: vi.fn(),
+      joinRoom,
+      leaveRoom: vi.fn(),
+      deleteRoom: vi.fn(),
+    });
+
+    const view = render(
+      <LobbyContainer
+        session={{
+          sessionId: "session-1",
+          sessionType: "guest",
+          status: "active",
+          lastActivityAt: "2026-03-31T00:00:00Z",
+          player: {
+            playerId: "player-1",
+            identityType: "guest",
+            displayName: "Host",
+            profileAvatar: "",
+          },
+        }}
+        currentPlayerId="player-1"
+      />,
+    );
+
+    lobbyHookMock.useRoomState.mockReturnValue({
+      room: null,
+      availableRooms: [
+        {
+          roomId: "room-join",
+          roomStatus: "open",
+          joinPolicy: "open",
+          waitingPolicy: "late_join_waiting_allowed",
+          hostPlayerId: "player-2",
+          hostDisplayName: "Other",
+          members: [
+            {
+              roomMembershipId: "m2",
+              membershipStatus: "active",
+              joinedAt: "2026-03-31T00:00:00Z",
+              player: { playerId: "player-2", identityType: "guest", displayName: "Other" },
+            },
+          ],
+        },
+      ],
+      activeMatchId: null,
+      errorMessage: null,
+      setErrorMessage,
+      setActiveMatchId: vi.fn(),
+      createRoom: vi.fn(),
+      joinRoom,
+      leaveRoom: vi.fn(),
+      deleteRoom: vi.fn(),
+    });
+    view.rerender(
+      <LobbyContainer
+        session={{
+          sessionId: "session-1",
+          sessionType: "guest",
+          status: "active",
+          lastActivityAt: "2026-03-31T00:00:00Z",
+          player: {
+            playerId: "player-1",
+            identityType: "guest",
+            displayName: "Host",
+            profileAvatar: "",
+          },
+        }}
+        currentPlayerId="player-1"
+      />,
+    );
+
+    fireEvent.click(within(view.container).getByText("Join"));
+    await waitFor(() => {
+      expect(setErrorMessage).toHaveBeenCalledWith("join by id failed");
     });
   });
 
@@ -677,8 +785,8 @@ describe("container edge coverage", () => {
     const view = render(<LobbyContainer session={session} currentPlayerId="p1" />);
 
     // successful joinRoom — covers line 42 normal-completion branch
-    fireEvent.change(view.getByLabelText("Room ID"), { target: { value: "room-ok" } });
-    fireEvent.click(view.getByText("Join room"));
+    fireEvent.change(within(view.container).getByLabelText("Room ID"), { target: { value: "room-ok" } });
+    fireEvent.click(within(view.container).getByText("Join room"));
     await waitFor(() => expect(joinRoom).toHaveBeenCalledWith("room-ok"));
 
     // rerender with a room so Leave room button is visible
@@ -729,5 +837,44 @@ describe("container edge coverage", () => {
     onMessage?.({ event: "social_interaction_update" });
 
     await waitFor(() => expect(apiClientMock.getSocialState).toHaveBeenCalledTimes(2));
+  });
+
+  test("SocialPanelContainer covers fallback toast labels and expired toast cleanup", async () => {
+    vi.useFakeTimers();
+    const nowSpy = vi.spyOn(Date, "now");
+    let now = 10_000;
+    nowSpy.mockImplementation(() => now);
+
+    apiClientMock.getSocialState.mockResolvedValueOnce({
+      presetMessages: [],
+      interactions: [
+        {
+          socialInteractionId: "i-1",
+          interactionType: "wave",
+          displayName: "Casey",
+          targetDisplayName: null,
+          targetSubmissionId: null,
+          presetMessage: null,
+          createdAt: "2026-04-01T00:00:00Z",
+        },
+      ],
+      submissionSummaries: [],
+      crowdFavorites: [],
+    });
+    realtimeMock.subscribeToMatch.mockReturnValue(vi.fn());
+
+    const view = render(<SocialPanelContainer matchId="match-toast" />);
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(view.getByText("Casey — wave")).toBeInTheDocument();
+
+    now = 20_000;
+    act(() => {
+      vi.advanceTimersByTime(4000);
+    });
+
+    expect(view.queryByText("Casey — wave")).not.toBeInTheDocument();
   });
 });

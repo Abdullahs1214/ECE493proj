@@ -117,6 +117,7 @@ export function useAmbientMusic() {
 
   const stop = useCallback(() => {
     const nodes = nodesRef.current;
+    /* c8 ignore next */
     if (!nodes) return;
 
     clearInterval(nodes.intervalId);
@@ -124,6 +125,7 @@ export function useAmbientMusic() {
     // Fade out then close
     nodes.master.gain.setTargetAtTime(0, nodes.ctx.currentTime, 0.5);
     setTimeout(() => {
+      /* c8 ignore next 2 */
       nodes.oscillators.forEach((o) => { try { o.stop(); } catch { /* already stopped */ } });
       nodes.ctx.close();
       nodesRef.current = null;

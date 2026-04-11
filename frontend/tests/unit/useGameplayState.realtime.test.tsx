@@ -42,6 +42,7 @@ function HookHarness() {
 
 
 test("useGameplayState updates from websocket timer events", async () => {
+  MockWebSocket.instances = [];
   vi.stubGlobal(
     "fetch",
     vi.fn().mockResolvedValue({
@@ -74,6 +75,9 @@ test("useGameplayState updates from websocket timer events", async () => {
 
   await waitFor(() => {
     expect(screen.getByText("active_round:59")).toBeInTheDocument();
+  });
+  await waitFor(() => {
+    expect(MockWebSocket.instances).toHaveLength(1);
   });
 
   MockWebSocket.instances[0].emit("message", {

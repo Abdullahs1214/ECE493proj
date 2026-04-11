@@ -10,7 +10,10 @@ import { useSessionState } from "../../src/hooks/useSessionState";
 const apiClientMocks = vi.hoisted(() => ({
   createGuestSession: vi.fn(),
   getCurrentSession: vi.fn(),
+  loginLocalAccount: vi.fn(),
   logoutSession: vi.fn(),
+  registerLocalAccount: vi.fn(),
+  signInWithOAuth: vi.fn(),
   updateCurrentSession: vi.fn(),
   getCurrentRoom: vi.fn(),
   getRooms: vi.fn(),
@@ -79,6 +82,51 @@ describe("state hooks", () => {
     });
     expect(apiClientMocks.logoutSession).toHaveBeenCalledTimes(1);
     expect(result.current.session).toBeNull();
+  });
+
+  test("useSessionState covers oauth restore failure, login success, avatar success, and fallback error messages", async () => {
+    const replaceState = vi.fn();
+    Object.defineProperty(window.history, "replaceState", {
+      configurable: true,
+      value: replaceState,
+    });
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: new URL("http://localhost/?oauthStatus=success"),
+    });
+
+    apiClientMocks.getCurrentSession
+      .mockResolvedValueOnce(null)
+      .mockRejectedValueOnce("oauth restore failed");
+    apiClientMocks.registerLocalAccount.mockRejectedValueOnce("register failed");
+    apiClientMocks.loginLocalAccount.mockResolvedValueOnce({ sessionId: "login-success" });
+    apiClientMocks.createGuestSession.mockRejectedValueOnce("guest failed");
+    apiClientMocks.signInWithOAuth.mockRejectedValueOnce("oauth failed");
+    apiClientMocks.updateCurrentSession
+      .mockRejectedValueOnce("rename failed")
+      .mockResolvedValueOnce({ sessionId: "avatar-success" });
+    apiClientMocks.logoutSession.mockRejectedValueOnce("logout failed");
+
+    const { result } = renderHook(() => useSessionState());
+
+    await waitFor(() => {
+      expect(result.current.errorMessage).toBe("OAuth sign-in completed, but the session could not be restored.");
+    });
+    expect(replaceState).toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.registerLocal("casey", "pw", "Casey");
+      await result.current.loginLocal("casey", "pw");
+      await result.current.enterAsGuest("Casey");
+      await result.current.enterWithOAuth("google");
+      await result.current.renameGuest("New Name");
+      await result.current.updateAvatar("avatar-data");
+      await result.current.clearSession();
+    });
+
+    expect(result.current.session).toEqual({ sessionId: "avatar-success" });
+    expect(result.current.loadState).toBe("ready");
+    expect(result.current.errorMessage).toBe("Unable to log out.");
   });
 
   test("useSessionState ignores async load results after unmount", async () => {
@@ -256,6 +304,101 @@ describe("state hooks", () => {
     expect(result.current.activeMatchId).toBeNull();
   });
 
+  test("useRoomState covers getRooms fallback and deleteRoom branches", async () => {
+    let onMessage: ((message: any) => void) | undefined;
+    realtimeMocks.subscribeToRoom.mockImplementation((_roomId, messageHandler) => {
+      onMessage = messageHandler;
+      return vi.fn();
+    });
+    const room4 = { roomId: "room-4", roomStatus: "open", joinPolicy: "open", waitingPolicy: "late_join_waiting_allowed", hostPlayerId: "host", hostDisplayName: "Host", members: [] };
+    apiClientMocks.getCurrentRoom.mockResolvedValue(room4);
+    apiClientMocks.getRooms
+      .mockResolvedValueOnce([])
+      .mockRejectedValueOnce(new Error("refresh rooms failed"));
+    apiClientMocks.createRoom.mockResolvedValueOnce(room4);
+    apiClientMocks.deleteRoom.mockResolvedValueOnce({ roomClosed: true });
+
+    const { result } = renderHook(() => useRoomState());
+
+    await act(async () => {
+      await result.current.deleteRoom();
+    });
+    expect(apiClientMocks.deleteRoom).not.toHaveBeenCalled();
+
+    await act(async () => {
+      await result.current.createRoom();
+    });
+
+    act(() => {
+      onMessage?.({
+        event: "room_state_update",
+        roomId: "room-4",
+        roomClosed: false,
+        room: room4,
+      });
+    });
+    await waitFor(() => {
+      expect(result.current.availableRooms).toEqual([]);
+    });
+
+    act(() => {
+      result.current.setActiveMatchId("match-4");
+    });
+    await act(async () => {
+      await result.current.deleteRoom();
+    });
+
+    expect(apiClientMocks.deleteRoom).toHaveBeenCalledWith("room-4");
+    expect(result.current.activeMatchId).toBeNull();
+  });
+
+  test("useRoomState filters the previous room from available rooms when leaveRoom returns no room payload", async () => {
+    const room = {
+      roomId: "room-5",
+      roomStatus: "open" as const,
+      joinPolicy: "open" as const,
+      waitingPolicy: "late_join_waiting_allowed" as const,
+      hostPlayerId: "host",
+      hostDisplayName: "Host",
+      members: [],
+    };
+    const otherRoom = {
+      ...room,
+      roomId: "room-6",
+      hostDisplayName: "Other",
+    };
+
+    realtimeMocks.subscribeToRoom.mockReturnValue(vi.fn());
+    apiClientMocks.getCurrentRoom.mockResolvedValue(null);
+    apiClientMocks.getRooms.mockResolvedValue([otherRoom]);
+    apiClientMocks.joinRoom.mockResolvedValueOnce(room);
+    apiClientMocks.leaveRoom.mockResolvedValueOnce({
+      leftRoom: true,
+      roomClosed: false,
+      room: null,
+    });
+
+    const { result } = renderHook(() => useRoomState());
+
+    await waitFor(() => {
+      expect(result.current.availableRooms).toEqual([otherRoom]);
+    });
+
+    await act(async () => {
+      await result.current.joinRoom("room-5");
+    });
+    expect(apiClientMocks.joinRoom).toHaveBeenCalledWith("room-5");
+
+    await act(async () => {
+      await result.current.leaveRoom();
+    });
+
+    await waitFor(() => {
+      expect(result.current.room).toBeNull();
+      expect(result.current.availableRooms).toEqual([otherRoom]);
+    });
+  });
+
   test("useGameplayState covers initial error, match subscription, polling, and submit branches", async () => {
     const pollingState = {
       matchId: "match-1",
@@ -362,6 +505,44 @@ describe("state hooks", () => {
     expect(apiClientMocks.submitGameplayColor).toHaveBeenLastCalledWith("match-1", [4, 5, 6]);
     expect(activeHook.result.current.gameplay).toEqual(submittedState);
     expect(activeHook.result.current.errorMessage).toBeNull();
+  });
+
+  test("useGameplayState polling success updates gameplay state", async () => {
+    let intervalCallback: (() => Promise<void>) | undefined;
+    const initialState = {
+      matchId: "match-poll",
+      matchStatus: "active_round" as const,
+      canAdvance: false,
+      round: { remainingSeconds: 12 },
+    };
+    const refreshedState = {
+      ...initialState,
+      round: { remainingSeconds: 7 },
+    };
+
+    apiClientMocks.startGameplay.mockResolvedValueOnce(initialState);
+    apiClientMocks.getGameplayState.mockResolvedValueOnce(refreshedState);
+    realtimeMocks.subscribeToMatch.mockReturnValue(vi.fn());
+    vi.spyOn(window, "setInterval").mockImplementation((callback) => {
+      intervalCallback = callback as () => Promise<void>;
+      return 1 as unknown as number;
+    });
+    vi.spyOn(window, "clearInterval").mockImplementation(() => {});
+
+    const { result } = renderHook(() => useGameplayState({ mode: "single_player" }));
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+    expect(result.current.gameplay?.matchId).toBe("match-poll");
+    expect(intervalCallback).toBeTypeOf("function");
+
+    await act(async () => {
+      await intervalCallback?.();
+    });
+
+    expect(apiClientMocks.getGameplayState).toHaveBeenCalledWith("match-poll");
+    expect(result.current.gameplay?.round.remainingSeconds).toBe(7);
   });
 
   test("useGameplayState returns early when submitting without gameplay", async () => {

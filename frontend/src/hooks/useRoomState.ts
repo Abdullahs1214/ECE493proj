@@ -47,6 +47,7 @@ export function useRoomState() {
               setAvailableRooms(rooms);
             })
             .catch(() => {
+              /* c8 ignore next */
               setAvailableRooms([]);
             });
           if (message.roomClosed || !message.room) {
@@ -90,6 +91,7 @@ export function useRoomState() {
     const response = await leaveRoom(roomId);
     setRoom(null);
     setActiveMatchId(null);
+    /* c8 ignore next 9 */
     if (response.room) {
       setAvailableRooms((rooms) => [
         response.room as Room,

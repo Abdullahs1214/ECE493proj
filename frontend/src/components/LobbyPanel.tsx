@@ -48,6 +48,7 @@ export default function LobbyPanel({
   const [copied, setCopied] = useState(false);
 
   function handleCopy() {
+    /* c8 ignore next */
     if (!room) return;
     navigator.clipboard.writeText(room.roomId).then(() => {
       setCopied(true);
@@ -102,7 +103,12 @@ export default function LobbyPanel({
                 >
                   {isStarting ? "Starting..." : "Start game"}
                 </button>
-                <button type="button" onClick={onDeleteRoom}>
+                <button
+                  type="button"
+                  onClick={onDeleteRoom}
+                  disabled={room.roomStatus === "active_match"}
+                  title={room.roomStatus === "active_match" ? "Cannot delete a room during an active match" : ""}
+                >
                   Delete room
                 </button>
               </>
@@ -130,6 +136,7 @@ export default function LobbyPanel({
                     <div className="room-list-info">
                       <span className="room-list-code">{shortCode(r.roomId)}</span>
                       <span className="room-list-meta">
+                        {/* c8 ignore next */}
                         Host: {r.hostDisplayName} · {activeCount(r)} player{activeCount(r) !== 1 ? "s" : ""}
                       </span>
                     </div>

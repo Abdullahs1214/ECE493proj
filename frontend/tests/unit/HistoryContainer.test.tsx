@@ -45,3 +45,22 @@ test("renders room-scoped and identity-scoped history", async () => {
 
   vi.unstubAllGlobals();
 });
+
+test("HistoryContainer shows Error.message on load failure", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValue({
+      ok: false,
+      status: 500,
+      json: async () => ({ error: "history exploded" }),
+    }),
+  );
+
+  render(<HistoryContainer />);
+
+  await waitFor(() => {
+    expect(screen.getByText("history exploded")).toBeInTheDocument();
+  });
+
+  vi.unstubAllGlobals();
+});

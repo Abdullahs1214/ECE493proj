@@ -204,6 +204,8 @@ def delete_room(player: PlayerIdentity, room_id: str) -> None:
         raise ValueError("Room was not found.")
     if room.host_player_id != player.player_id:
         raise ValueError("Only the host can delete this room.")
+    if room.room_status == Room.RoomStatus.ACTIVE_MATCH:
+        raise ValueError("Cannot delete a room during an active match.")
 
     room.room_status = Room.RoomStatus.CLOSED
     room.join_policy = Room.JoinPolicy.LOCKED_FOR_ACTIVE_MATCH
@@ -226,9 +228,19 @@ def mark_player_disconnected(player: PlayerIdentity, room_id: str) -> None:
     if membership is None:
         return
 
+    was_host = room.host_player_id == player.player_id
     membership.membership_status = RoomMembership.MembershipStatus.DISCONNECTED
     membership.save(update_fields=["membership_status"])
     room.refresh_from_db()
+
+    if was_host:
+        room.room_status = Room.RoomStatus.CLOSED
+        room.join_policy = Room.JoinPolicy.LOCKED_FOR_ACTIVE_MATCH
+        room.save(update_fields=["room_status", "join_policy"])
+        _cleanup_guest_room_history(room)
+        publish_room_closed(room)
+        room.memberships.all().delete()
+        return
 
     # Auto-close the room if no active members remain and no match is in progress
     active_remaining = room.memberships.filter(

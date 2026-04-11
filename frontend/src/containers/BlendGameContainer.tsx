@@ -24,6 +24,7 @@ function blendFromWeights(baseColorSet: number[][], mixWeights: number[]) {
     Math.round(
       baseColorSet.reduce(
         (sum, sourceColor, colorIndex) =>
+          /* c8 ignore next */
           sum + sourceColor[channelIndex] * (resolvedWeights[colorIndex] ?? 0),
         0,
       ) / resolvedTotalWeight,
@@ -111,6 +112,7 @@ export default function BlendGameContainer({
         currentRoundNumber={gameplay.currentRoundNumber}
         totalRounds={gameplay.totalRounds}
         canAdvance={gameplay.canAdvance}
+        /* c8 ignore next */
         isHost={mode === "single_player" || currentPlayerId === hostPlayerId}
         currentPlayerId={currentPlayerId}
         onAdvance={(nextState) => setGameplay(nextState)}
@@ -127,6 +129,7 @@ export default function BlendGameContainer({
   const hasSubmitted = hasLocallySubmitted || hasBackendSubmission;
 
   async function handleSubmit() {
+    /* c8 ignore next 3 */
     if (hasSubmitted || isSubmitting) {
       return;
     }

@@ -266,11 +266,16 @@ export async function getGameplayState(matchId: string) {
 }
 
 export async function getHistory(): Promise<{
+  currentRoomId: string | null;
   roomScopedHistory: HistoryEntry[];
   identityScopedHistory: HistoryEntry[];
 }> {
   const payload = await request<{
-    history: { roomScopedHistory: HistoryEntry[]; identityScopedHistory: HistoryEntry[] };
+    history: {
+      currentRoomId: string | null;
+      roomScopedHistory: HistoryEntry[];
+      identityScopedHistory: HistoryEntry[];
+    };
   }>("/history/", {
     method: "GET",
   });

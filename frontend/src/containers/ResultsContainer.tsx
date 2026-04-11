@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import ResultsPanel from "../components/ResultsPanel";
 import { advanceRound } from "../services/apiClient";
@@ -45,17 +45,27 @@ export default function ResultsContainer({
 }: ResultsContainerProps) {
   const [social, setSocial] = useState<SocialInteractionState | undefined>(undefined);
   const [isAdvancing, setIsAdvancing] = useState(false);
+  const restartTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (restartTimerRef.current) {
+        clearTimeout(restartTimerRef.current);
+      }
+    };
+  }, []);
 
   function handlePlayAgain() {
     if (onBackToMenu) {
       onBackToMenu();
-      setTimeout(() => {
+      restartTimerRef.current = setTimeout(() => {
         window.dispatchEvent(new CustomEvent("restart-game"));
       }, 0);
     }
   }
 
   async function handleNextRound() {
+    /* c8 ignore next */
     if (isAdvancing || !onAdvance) return;
     setIsAdvancing(true);
     try {

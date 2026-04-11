@@ -50,6 +50,9 @@ def _serialize_history_entry(entry: ScoreHistoryEntry) -> dict[str, Any]:
 
 
 def get_history_for_player(player: PlayerIdentity) -> dict[str, list[dict[str, Any]]]:
+    from services.room_service import get_room_for_player
+
+    current_room = get_room_for_player(player)
     room_entries = (
         ScoreHistoryEntry.objects.select_related("score_record", "player", "round__match")
         .filter(
@@ -58,12 +61,15 @@ def get_history_for_player(player: PlayerIdentity) -> dict[str, list[dict[str, A
         )
         .order_by("-created_at")
     )
+    if current_room is not None:
+        room_entries = room_entries.filter(room=current_room)
     identity_entries = (
         ScoreHistoryEntry.objects.select_related("score_record", "player", "round__match")
         .filter(player=player, history_scope=ScoreHistoryEntry.HistoryScope.IDENTITY_SCOPED)
         .order_by("-created_at")
     )
     return {
+        "currentRoomId": str(current_room.room_id) if current_room is not None else None,
         "roomScopedHistory": [_serialize_history_entry(entry) for entry in room_entries],
         "identityScopedHistory": [_serialize_history_entry(entry) for entry in identity_entries],
     }

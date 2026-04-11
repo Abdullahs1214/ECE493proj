@@ -34,11 +34,15 @@ def _serialize_session(session: Session) -> dict[str, Any]:
 def _next_guest_name() -> str:
     guest_number = (
         PlayerIdentity.objects.filter(
-        identity_type=PlayerIdentity.IdentityType.GUEST
+            identity_type=PlayerIdentity.IdentityType.GUEST
         ).count()
         + 1
     )
-    return f"Guest {guest_number}"
+    while True:
+        candidate = f"Guest {guest_number}"
+        if not PlayerIdentity.objects.filter(display_name=candidate).exists():
+            return candidate
+        guest_number += 1
 
 
 def create_guest_session(display_name: str | None = None) -> Session:
@@ -165,6 +169,18 @@ def update_display_name(session: Session, display_name: str) -> Session:
     display_name = display_name.strip()
     if not display_name:
         raise ValueError("Display name cannot be blank.")
+    from services.room_service import get_room_for_player
+    from apps.rooms.validators import validate_display_name_is_unique_in_room
+
+    room = get_room_for_player(session.player)
+    if room is not None:
+        original_name = session.player.display_name
+        session.player.display_name = display_name
+        try:
+            validate_display_name_is_unique_in_room(room, session.player)
+        finally:
+            session.player.display_name = original_name
+
     session.player.display_name = display_name
     session.player.save(update_fields=["display_name"])
     session.refresh_from_db()

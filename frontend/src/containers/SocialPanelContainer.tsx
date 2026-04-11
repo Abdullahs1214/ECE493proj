@@ -96,17 +96,24 @@ export default function SocialPanelContainer({
   }, [matchId]);
 
   useEffect(() => {
-    return subscribeToMatch(matchId, (message) => {
+    let active = true;
+    const unsubscribe = subscribeToMatch(matchId, (message) => {
       if (message.event !== "social_interaction_update") return;
       getSocialState(matchId)
         .then((state) => {
+          if (!active) return;
           applyState(state);
           setErrorMessage(null);
         })
         .catch((error) => {
+          if (!active) return;
           setErrorMessage(error instanceof Error ? error.message : "Unable to load social state.");
         });
     });
+    return () => {
+      active = false;
+      unsubscribe();
+    };
   }, [matchId]);
 
   async function submitAndRefresh(

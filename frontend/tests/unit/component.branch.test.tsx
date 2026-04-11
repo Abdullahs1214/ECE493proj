@@ -1,11 +1,13 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, describe, expect, test, vi } from "vitest";
 
 import App from "../../src/App";
 import BlendControls from "../../src/components/BlendControls";
+import BlendSimulator from "../../src/components/BlendSimulator";
 import EntryPanel from "../../src/components/EntryPanel";
 import HistoryPanel from "../../src/components/HistoryPanel";
 import LobbyPanel from "../../src/components/LobbyPanel";
+import SocialPanel from "../../src/components/SocialPanel";
 import BlendGameContainer from "../../src/containers/BlendGameContainer";
 import SocialPanelContainer from "../../src/containers/SocialPanelContainer";
 
@@ -36,6 +38,7 @@ vi.mock("../../src/services/apiClient", async (importOriginal) => {
 
 describe("additional component coverage", () => {
   afterEach(() => {
+    cleanup();
     vi.unstubAllGlobals();
     useGameplayStateMock.useGameplayState.mockReset();
     apiClientMock.getSocialState.mockReset();
@@ -62,6 +65,7 @@ describe("additional component coverage", () => {
   test("BlendControls calls handlers on weight change and submit", () => {
     const setColor = vi.fn();
     const submit = vi.fn();
+    const reset = vi.fn();
 
     render(
       <BlendControls
@@ -69,16 +73,75 @@ describe("additional component coverage", () => {
         mixWeights={[50]}
         blendedColor={[128, 0, 0]}
         onMixWeightsChange={setColor}
-        onReset={vi.fn()}
+        onReset={reset}
         onSubmit={submit}
       />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: "Add Red" }));
+    fireEvent.change(screen.getByRole("spinbutton", { name: "Red weight" }), { target: { value: "25" } });
+    fireEvent.click(screen.getByRole("button", { name: "Reset" }));
     fireEvent.click(screen.getByRole("button", { name: "Submit color" }));
 
     expect(setColor).toHaveBeenCalled();
+    expect(reset).toHaveBeenCalled();
     expect(submit).toHaveBeenCalled();
+  });
+
+  test("BlendControls covers custom color labels, black border, and submitting state", () => {
+    render(
+      <BlendControls
+        baseColorSet={[[12, 34, 56], [0, 0, 0]]}
+        mixWeights={[95, 0]}
+        blendedColor={[12, 34, 56]}
+        onMixWeightsChange={vi.fn()}
+        onReset={vi.fn()}
+        onSubmit={vi.fn()}
+        disabled
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Add rgb(12, 34, 56)" })).toBeInTheDocument();
+    expect(screen.getByLabelText("rgb(12, 34, 56) weight")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Submitting..." })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Add Black" }).closest("div")).toHaveStyle({
+      border: "2px solid rgba(18,33,44,0.25)",
+    });
+  });
+
+  test("BlendControls covers sparse mixWeights fallback branch", () => {
+    const onMixWeightsChange = vi.fn();
+
+    render(
+      <BlendControls
+        baseColorSet={[[255, 0, 0], [0, 255, 0]]}
+        mixWeights={[10]}
+        blendedColor={[10, 20, 30]}
+        onMixWeightsChange={onMixWeightsChange}
+        onReset={vi.fn()}
+        onSubmit={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Add Green" }));
+    expect(onMixWeightsChange).toHaveBeenCalledWith([10, 10]);
+  });
+
+  test("BlendSimulator covers default optimal weights and black tile styling", () => {
+    const view = render(<BlendSimulator targetColor={[255, 255, 255]} />);
+
+    expect(within(view.container).getAllByLabelText("Black weight")[0]).toBeInTheDocument();
+    expect(within(view.container).getByRole("button", { name: "Add Black" }).closest("div")).toHaveStyle({
+      border: "2px solid rgba(18,33,44,0.25)",
+    });
+  });
+
+  test("BlendSimulator covers sparse initial weights fallback", () => {
+    const view = render(<BlendSimulator targetColor={[255, 255, 255]} initialWeights={[1]} />);
+
+    expect(within(view.container).getAllByLabelText("Black weight")[0]).toHaveValue(0);
+    fireEvent.click(within(view.container).getByRole("button", { name: "Add Black" }));
+    expect(within(view.container).getAllByLabelText("Black weight")[0]).toHaveValue(10);
   });
 
   test("HistoryPanel renders both lists", () => {
@@ -183,8 +246,156 @@ describe("additional component coverage", () => {
       ),
     ).toBeInTheDocument();
     expect(within(roomView.container).getByText("Guest")).toBeInTheDocument();
+    expect(within(roomView.container).getByRole("button", { name: "Delete room" })).toHaveAttribute("title", "");
     fireEvent.click(within(roomView.container).getByText("Leave room"));
     expect(callbacks.onLeaveRoom).toHaveBeenCalled();
+  });
+
+  test("LobbyPanel covers singular active-room copy and single-player text", async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      configurable: true,
+      value: { writeText },
+    });
+
+    render(
+      <LobbyPanel
+        session={{
+          sessionId: "s1",
+          sessionType: "guest",
+          status: "active",
+          lastActivityAt: "2026-04-01T00:00:00Z",
+          player: { playerId: "p1", identityType: "guest", displayName: "Host", profileAvatar: "" },
+        }}
+        room={null}
+        availableRooms={[
+          {
+            roomId: "solo-room",
+            roomStatus: "open",
+            joinPolicy: "open",
+            waitingPolicy: "late_join_waiting_allowed",
+            hostPlayerId: "p2",
+            hostDisplayName: "SoloHost",
+            members: [
+              {
+                roomMembershipId: "m1",
+                membershipStatus: "active",
+                joinedAt: "2026-04-01T00:00:00Z",
+                player: { playerId: "p2", identityType: "guest", displayName: "SoloHost" },
+              },
+            ],
+          },
+        ]}
+        currentPlayerId="p1"
+        roomIdInput=""
+        errorMessage={null}
+        onRoomIdInputChange={vi.fn()}
+        onCreateRoom={vi.fn()}
+        onJoinRoom={vi.fn()}
+        onJoinRoomById={vi.fn()}
+        onLeaveRoom={vi.fn()}
+        onDeleteRoom={vi.fn()}
+        onStartGameplay={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/1 player/)).toBeInTheDocument();
+    expect(writeText).not.toHaveBeenCalled();
+  });
+
+  test("LobbyPanel disables delete during an active match", () => {
+    render(
+      <LobbyPanel
+        session={{
+          sessionId: "session-active",
+          sessionType: "guest",
+          status: "active",
+          lastActivityAt: "2026-04-01T00:00:00Z",
+          player: { playerId: "p", identityType: "guest", displayName: "Host", profileAvatar: "" },
+        }}
+        room={{
+          roomId: "room-active",
+          roomStatus: "active_match",
+          joinPolicy: "locked_for_active_match",
+          waitingPolicy: "late_join_waiting_allowed",
+          hostPlayerId: "p",
+          hostDisplayName: "Host",
+          members: [
+            {
+              roomMembershipId: "m1",
+              membershipStatus: "active",
+              joinedAt: "2026-04-01T00:00:00Z",
+              player: { playerId: "p", identityType: "guest", displayName: "Host" },
+            },
+            {
+              roomMembershipId: "m2",
+              membershipStatus: "active",
+              joinedAt: "2026-04-01T00:00:00Z",
+              player: { playerId: "other", identityType: "guest", displayName: "Guest" },
+            },
+          ],
+        }}
+        availableRooms={[]}
+        currentPlayerId="p"
+        roomIdInput=""
+        errorMessage={null}
+        onRoomIdInputChange={vi.fn()}
+        onCreateRoom={vi.fn()}
+        onJoinRoom={vi.fn()}
+        onJoinRoomById={vi.fn()}
+        onLeaveRoom={vi.fn()}
+        onDeleteRoom={vi.fn()}
+        onStartGameplay={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Delete room" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Delete room" })).toHaveAttribute(
+      "title",
+      "Cannot delete a room during an active match",
+    );
+  });
+
+  test("SocialPanel covers singular crowd favorite and fallback history labels", () => {
+    render(
+      <SocialPanel
+        social={{
+          presetMessages: ["Nice"],
+          interactions: [
+            {
+              socialInteractionId: "i1",
+              interactionType: "wave" as any,
+              displayName: "Alex",
+              targetDisplayName: null,
+              targetSubmissionId: null,
+              presetMessage: null,
+              createdAt: "2026-04-01T00:00:00Z",
+            },
+          ],
+          submissionSummaries: [],
+          crowdFavorites: [
+            {
+              submissionId: "sub1",
+              playerId: "p1",
+              displayName: "Alex",
+              reactionCount: 1,
+              upvoteCount: 1,
+              highlightCount: 0,
+            },
+          ],
+        }}
+        toasts={[]}
+        onPresetMessage={vi.fn()}
+        onUpvote={vi.fn()}
+        onHighlight={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText(/Crowd favorite:/)).toBeInTheDocument();
+    expect(screen.getByText(/1 reaction$/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Show history (1)" }));
+    expect(screen.getByText("Alex — wave")).toBeInTheDocument();
+    expect(screen.getByText(/1 reaction$/)).toBeInTheDocument();
   });
 
   test("BlendGameContainer renders loading and results states", () => {

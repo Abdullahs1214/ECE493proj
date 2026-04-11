@@ -9,6 +9,7 @@ interface HistoryContainerProps {
 }
 
 export default function HistoryContainer({ session = null }: HistoryContainerProps) {
+  const [currentRoomId, setCurrentRoomId] = useState<string | null>(null);
   const [roomScopedHistory, setRoomScopedHistory] = useState<HistoryEntry[]>([]);
   const [identityScopedHistory, setIdentityScopedHistory] = useState<HistoryEntry[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -21,6 +22,7 @@ export default function HistoryContainer({ session = null }: HistoryContainerPro
         if (!active) {
           return;
         }
+        setCurrentRoomId(history.currentRoomId);
         setRoomScopedHistory(history.roomScopedHistory);
         setIdentityScopedHistory(history.identityScopedHistory);
       })
@@ -43,6 +45,7 @@ export default function HistoryContainer({ session = null }: HistoryContainerPro
   return (
     <HistoryPanel
       session={session}
+      currentRoomId={currentRoomId}
       roomScopedHistory={roomScopedHistory}
       identityScopedHistory={identityScopedHistory}
     />

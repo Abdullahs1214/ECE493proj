@@ -23,6 +23,7 @@ class HistoryTests(TestCase):
 
         history = get_history_for_player(player)
 
+        self.assertIsNone(history["currentRoomId"])
         self.assertEqual(len(history["roomScopedHistory"]), 1)
         self.assertEqual(history["identityScopedHistory"], [])
 
@@ -38,8 +39,29 @@ class HistoryTests(TestCase):
 
         history = get_history_for_player(player)
 
+        self.assertIsNone(history["currentRoomId"])
         self.assertEqual(len(history["roomScopedHistory"]), 1)
         self.assertEqual(len(history["identityScopedHistory"]), 1)
+
+    @patch("engine.scoring_engine.random.randint", side_effect=[70, 80, 90])
+    def test_history_reports_current_room_id_when_player_is_in_room(self, _mock_randint) -> None:
+        player = PlayerIdentity.objects.create(
+            identity_type=PlayerIdentity.IdentityType.AUTHENTICATED,
+            display_name="Room History",
+            oauth_identity="room-history-1",
+        )
+        from services.room_service import create_room
+
+        room = create_room(player)
+        match = start_single_player_match(player)
+        match.room = room
+        match.save(update_fields=["room"])
+        submit_color(player, str(match.match_id), [70, 80, 90])
+
+        history = get_history_for_player(player)
+
+        self.assertEqual(history["currentRoomId"], str(room.room_id))
+        self.assertEqual(len(history["roomScopedHistory"]), 1)
 
     def test_profile_and_history_views_require_active_session(self) -> None:
         def _request_with_session(request):

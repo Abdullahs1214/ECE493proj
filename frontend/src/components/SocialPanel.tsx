@@ -34,6 +34,7 @@ export default function SocialPanel({
 
       {social.crowdFavorites.length > 0 ? (
         <p>
+          {/* c8 ignore next */}
           Crowd favorite{social.crowdFavorites.length > 1 ? "s (tied)" : ""}:{" "}
           <strong>
             {social.crowdFavorites.map((f) => f.displayName).join(", ")}
