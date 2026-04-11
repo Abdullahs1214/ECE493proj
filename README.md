@@ -43,8 +43,11 @@ cp .env.example .env
 # Apply database migrations
 python manage.py migrate
 
+# Install wsproto support for realtime WebSocket handling
+pip install wsproto
+
 # Start the backend server
-python manage.py runserver
+uvicorn blend_colour_game.asgi:application --reload --ws wsproto
 ```
 
 Backend runs at **http://localhost:8000**
@@ -132,7 +135,8 @@ cd backend
 source .venv/bin/activate
 
 python manage.py migrate          # apply migrations
-python manage.py runserver        # start dev server
+pip install wsproto              # install wsproto support
+uvicorn blend_colour_game.asgi:application --reload --ws wsproto  # start dev server
 
 pytest                            # run backend tests
 pytest --cov=. --cov-report=term  # with coverage
