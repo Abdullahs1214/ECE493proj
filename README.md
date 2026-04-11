@@ -139,7 +139,8 @@ pip install wsproto              # install wsproto support
 uvicorn blend_colour_game.asgi:application --reload --ws wsproto  # start dev server
 
 pytest                            # run backend tests
-pytest --cov=. --cov-report=term  # with coverage
+coverage run --branch --source=api,apps,engine,services,websockets -m pytest tests
+coverage report -m --omit="*/migrations/*,*/tests/*,*/__init__.py,*/apps.py,blend_colour_game/settings.py,blend_colour_game/urls.py"
 ruff check .                      # lint
 ```
 
@@ -148,9 +149,12 @@ ruff check .                      # lint
 ```bash
 cd frontend
 
+npm install
 npm run dev       # start dev server
 npm run build     # production build
+npm install
 npm run test      # run unit tests
+npm install
 npm run coverage  # test coverage report
 ```
 
